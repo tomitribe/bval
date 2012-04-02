@@ -27,11 +27,14 @@ import java.security.PrivilegedAction;
  * Description: invoke a zero-argument method (getter)<br/>
  */
 public class MethodAccess extends AccessStrategy {
+    private static final Privileged PRIVILEGED = new Privileged();
+
     private final Method method;
     private final String propertyName;
 
     /**
      * Create a new MethodAccess instance.
+     * 
      * @param method
      */
     public MethodAccess(Method method) {
@@ -40,6 +43,7 @@ public class MethodAccess extends AccessStrategy {
 
     /**
      * Create a new MethodAccess instance.
+     * 
      * @param propertyName
      * @param method
      */
@@ -47,10 +51,10 @@ public class MethodAccess extends AccessStrategy {
         this.method = method;
         this.propertyName = propertyName;
         if (!method.isAccessible()) {
-            PrivilegedActions.run( new PrivilegedAction<Object>() {
-                public Object run() {
+            PRIVILEGED.run(new PrivilegedAction<Void>() {
+                public Void run() {
                     method.setAccessible(true);
-                    return (Object) null;
+                    return null;
                 }
             });
         }
@@ -58,23 +62,25 @@ public class MethodAccess extends AccessStrategy {
 
     /**
      * Process bean properties getter by applying the JavaBean naming conventions.
-     *
-     * @param member the member for which to get the property name.
-     * @return The bean method name with the "is" or "get" prefix stripped off, <code>null</code>
-     *         the method name id not according to the JavaBeans standard.
+     * 
+     * @param member
+     *            the member for which to get the property name.
+     * @return The bean method name with the "is" or "get" prefix stripped off, <code>null</code> the method name id not
+     *         according to the JavaBeans standard.
      */
     public static String getPropertyName(Method member) {
         String name = null;
         String methodName = member.getName();
         if (methodName.startsWith("is")) {
             name = Introspector.decapitalize(methodName.substring(2));
-        } /* else if ( methodName.startsWith("has")) {
-				name = Introspector.decapitalize( methodName.substring( 3 ) );
-			} */
+        } /*
+           * else if ( methodName.startsWith("has")) { name = Introspector.decapitalize( methodName.substring( 3 ) ); }
+           */
         // setter annotation is NOT supported in the spec
-        /*  else if (method.getName().startsWith("set") && method.getParameterTypes().length == 1) {
-           propName = Introspector.decapitalize(method.getName().substring(3));
-       } */
+        /*
+         * else if (method.getName().startsWith("set") && method.getParameterTypes().length == 1) { propName =
+         * Introspector.decapitalize(method.getName().substring(3)); }
+         */
         else if (methodName.startsWith("get")) {
             name = Introspector.decapitalize(methodName.substring(3));
         }
@@ -82,8 +88,7 @@ public class MethodAccess extends AccessStrategy {
     }
 
     /**
-     * {@inheritDoc}
-     * normally the propertyName of the getter method, e.g.<br>
+     * {@inheritDoc} normally the propertyName of the getter method, e.g.<br>
      * method: getName() -> propertyName: name<br>
      * method: isValid() -> propertyName: valid<br>
      */
@@ -129,8 +134,10 @@ public class MethodAccess extends AccessStrategy {
      * {@inheritDoc}
      */
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         MethodAccess that = (MethodAccess) o;
 

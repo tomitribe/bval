@@ -25,17 +25,19 @@ import java.security.PrivilegedAction;
  * Description: direct field access strategy.<br/>
  */
 public class FieldAccess extends AccessStrategy {
+    private static final Privileged PRIVILEGED = new Privileged();
 
     private final Field field;
 
     /**
      * Create a new FieldAccess instance.
+     * 
      * @param field
      */
     public FieldAccess(final Field field) {
         this.field = field;
-        if(!field.isAccessible()) {
-            PrivilegedActions.run( new PrivilegedAction<Object>() {
+        if (!field.isAccessible()) {
+            PRIVILEGED.run(new PrivilegedAction<Object>() {
                 public Object run() {
                     field.setAccessible(true);
                     return (Object) null;
@@ -87,8 +89,10 @@ public class FieldAccess extends AccessStrategy {
      * {@inheritDoc}
      */
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         FieldAccess that = (FieldAccess) o;
 

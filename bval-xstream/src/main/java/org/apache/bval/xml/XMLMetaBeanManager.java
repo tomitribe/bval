@@ -19,7 +19,7 @@ package org.apache.bval.xml;
 import org.apache.bval.MetaBeanManager;
 import org.apache.bval.model.MetaBean;
 import org.apache.bval.model.MetaProperty;
-import org.apache.bval.util.PrivilegedActions;
+import org.apache.bval.util.Privileged;
 
 import java.util.Map;
 
@@ -36,6 +36,8 @@ import static org.apache.bval.model.Features.Property.REF_BEAN_ID;
  * Time: 09:47:14<br>
  */
 public class XMLMetaBeanManager extends MetaBeanManager implements XMLMetaBeanRegistry, MetaBeanEnricher {
+    private static final Privileged PRIVILEGED = new Privileged();
+
     public XMLMetaBeanManager() {
         this(new XMLMetaBeanBuilder());
     }
@@ -45,7 +47,7 @@ public class XMLMetaBeanManager extends MetaBeanManager implements XMLMetaBeanRe
     }
 
     public void addResourceLoader(String resource) {
-        addLoader(new XMLMetaBeanURLLoader(PrivilegedActions.getClassLoader(getClass()).getResource(resource)));
+        addLoader(new XMLMetaBeanURLLoader(PRIVILEGED.getClassLoader(getClass()).getResource(resource)));
     }
 
     public synchronized void addLoader(XMLMetaBeanLoader loader) {
@@ -128,4 +130,5 @@ public class XMLMetaBeanManager extends MetaBeanManager implements XMLMetaBeanRe
             super.computeRelatedMetaBean(prop, beanRef);
         }
     }
+
 }

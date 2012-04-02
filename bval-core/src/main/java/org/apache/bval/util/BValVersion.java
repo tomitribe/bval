@@ -18,14 +18,15 @@
  */
 package org.apache.bval.util;
 
+import org.apache.bval.util.Privileged;
+
 import java.io.InputStream;
 import java.io.IOException;
 import java.util.Properties;
 import java.util.StringTokenizer;
 
 /**
- * This class contains version information for BVal.
- * It uses Ant's filter tokens to convert the template into a java
+ * This class contains version information for BVal. It uses Ant's filter tokens to convert the template into a java
  * file with current information.
  */
 public class BValVersion {
@@ -47,11 +48,12 @@ public class BValVersion {
     /** Version control revision number */
     public static final String REVISION_NUMBER;
 
+    private static final Privileged PRIVILEGED = new Privileged();
+
     static {
         Properties revisionProps = new Properties();
         try {
-            InputStream in = BValVersion.class.getResourceAsStream
-                ("/META-INF/org.apache.bval.revision.properties");
+            InputStream in = BValVersion.class.getResourceAsStream("/META-INF/org.apache.bval.revision.properties");
             if (in != null) {
                 try {
                     revisionProps.load(in);
@@ -113,6 +115,7 @@ public class BValVersion {
 
     /**
      * Get the project version number.
+     * 
      * @return String
      */
     public static String getVersion() {
@@ -121,6 +124,7 @@ public class BValVersion {
 
     /**
      * Get the version control revision number.
+     * 
      * @return String
      */
     public static String getRevision() {
@@ -129,6 +133,7 @@ public class BValVersion {
 
     /**
      * Get the project name.
+     * 
      * @return String
      */
     public static String getName() {
@@ -137,6 +142,7 @@ public class BValVersion {
 
     /**
      * Get the fully-qualified project id.
+     * 
      * @return String
      */
     public static String getID() {
@@ -145,9 +151,11 @@ public class BValVersion {
 
     /**
      * Main method of this class that prints the {@link #toString()} to <code>System.out</code>.
-     * @param args ignored
+     * 
+     * @param args
+     *            ignored
      */
-    public static void main(String [] args) {
+    public static void main(String[] args) {
         System.out.println(new BValVersion().toString());
     }
 
@@ -167,8 +175,8 @@ public class BValVersion {
         appendProperty("java.vendor", buf).append("\n\n");
 
         buf.append("java.class.path:\n");
-        StringTokenizer tok = new StringTokenizer(
-            PrivilegedActions.getProperty("java.class.path"));
+        final String cp = PRIVILEGED.getProperty("java.class.path");
+        StringTokenizer tok = new StringTokenizer(cp);
         while (tok.hasMoreTokens()) {
             buf.append("\t").append(tok.nextToken());
             buf.append("\n");
@@ -189,7 +197,6 @@ public class BValVersion {
     }
 
     private StringBuilder appendProperty(String prop, StringBuilder buf) {
-        return buf.append(prop).append(": ").append(
-            PrivilegedActions.getProperty(prop));
+        return buf.append(prop).append(": ").append(PRIVILEGED.getProperty(prop));
     }
 }
