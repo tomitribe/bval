@@ -18,16 +18,20 @@
  */
 package org.apache.bval.jsr303;
 
-import org.apache.bval.jsr303.util.SecureActions;
-
-import javax.validation.ConstraintValidator;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
-import java.security.PrivilegedAction;
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Properties;
+import java.util.StringTokenizer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import javax.validation.ConstraintValidator;
+
+import org.apache.bval.jsr303.util.Privileged;
 
 /**
  * Description: Provides access to the default constraints/validator implementation classes built into the framework.
@@ -37,6 +41,7 @@ public class ConstraintDefaults {
     private static final Logger log = Logger.getLogger(ConstraintDefaults.class.getName());
     private static final String DEFAULT_CONSTRAINTS =
           "org/apache/bval/jsr303/DefaultConstraints.properties";
+    private static final Privileged PRIVILEGED = new Privileged();
     
     /**
      * The default constraint data stored herein.
@@ -72,7 +77,7 @@ public class ConstraintDefaults {
     @SuppressWarnings("unchecked")
     private Map<String, Class<? extends ConstraintValidator<?, ?>>[]> loadDefaultConstraints(String resource) {
         Properties constraintProperties = new Properties();
-        final ClassLoader classloader = getClassLoader();
+        final ClassLoader classloader = PRIVILEGED.getClassLoader(getClass());
         InputStream stream = classloader.getResourceAsStream(resource);
         if (stream != null) {
             try {
@@ -93,32 +98,17 @@ public class ConstraintDefaults {
             while (tokens.hasMoreTokens()) {
                 final String eachClassName = tokens.nextToken();
 
-                Class<?> constraintValidatorClass =
-                      SecureActions.run(new PrivilegedAction<Class<?>>() {
-                          public Class<?> run() {
-                              try {
-                                  return Class.forName(eachClassName, true, classloader);
-                              } catch (ClassNotFoundException e) {
-                                  log.log(Level.SEVERE, String.format("Cannot find class %s", eachClassName), e);
-                                  return null;
-                              }
-                          }
-                      });
-
-                if (constraintValidatorClass != null) classes.add(constraintValidatorClass);
-
+                try {
+                    classes.add(PRIVILEGED.getClass(classloader, eachClassName));
+                } catch (ClassNotFoundException e) {
+                    log.log(Level.SEVERE, String.format("Cannot find class %s", eachClassName), e);
+                }
             }
             loadedConstraints
                   .put((String) entry.getKey(),
                         (Class<? extends ConstraintValidator<?, ?>>[]) classes.toArray(new Class[classes.size()]));
-
         }
         return loadedConstraints;
     }
 
-    private ClassLoader getClassLoader() {
-        ClassLoader classloader = Thread.currentThread().getContextClassLoader();
-        if (classloader == null) classloader = getClass().getClassLoader();
-        return classloader;
-    }
 }

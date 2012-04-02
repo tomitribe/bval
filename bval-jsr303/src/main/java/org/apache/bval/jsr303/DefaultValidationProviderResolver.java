@@ -16,83 +16,71 @@
  */
 package org.apache.bval.jsr303;
 
-
-import javax.validation.ValidationException;
-import javax.validation.ValidationProviderResolver;
-import javax.validation.spi.ValidationProvider;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 
+import javax.validation.ValidationException;
+import javax.validation.ValidationProviderResolver;
+import javax.validation.spi.ValidationProvider;
+
+import org.apache.bval.jsr303.util.IOUtils;
+import org.apache.bval.jsr303.util.Privileged;
+
 public class DefaultValidationProviderResolver implements ValidationProviderResolver {
 
-    //TODO - Spec recommends caching per classloader
-    private static final String SPI_CFG =
-            "META-INF/services/javax.validation.spi.ValidationProvider";
+    // TODO - Spec recommends caching per classloader
+    private static final String SPI_CFG = "META-INF/services/javax.validation.spi.ValidationProvider";
+    private static final Privileged PRIVILEGED = new Privileged();
 
     /**
      * {@inheritDoc}
      */
     public List<ValidationProvider<?>> getValidationProviders() {
-        List<ValidationProvider<?>> providers = new ArrayList<ValidationProvider<?>>();
-        try {
-            // get our classloader
-            ClassLoader cl = Thread.currentThread().getContextClassLoader();
-            if (cl == null)
-                cl = DefaultValidationProviderResolver.class.getClassLoader();
-            // find all service provider cfgs
-            Enumeration<URL> cfgs = cl.getResources(SPI_CFG);
-            while (cfgs.hasMoreElements()) {
-                URL url = cfgs.nextElement();
-                BufferedReader br = null;
-                try {
-                    br = new BufferedReader(new InputStreamReader(url.openStream()), 256);
-                    String line = br.readLine();
-                    // cfgs may contain multiple providers and/or comments
-                    while (line != null) {
-                        line = line.trim();
-                        if (!line.startsWith("#")) {
-                            try {
-                                // try loading the specified class
-                                final Class<?> provider = cl.loadClass(line);
-                                // create an instance to return
-                                ValidationProvider<?> vp =
-                                        AccessController.doPrivileged(new PrivilegedAction<ValidationProvider<?>>() {
-                                            public ValidationProvider<?> run() {
-                                                try {
-                                                    return (ValidationProvider<?>) provider.newInstance();
-                                                } catch (final Exception ex) {
-                                                    throw new ValidationException("Cannot instantiate : " + provider, ex);
-                                                }
-                                            }
-                                        });
-                                 providers.add(vp);
+        final List<ValidationProvider<?>> target = new ArrayList<ValidationProvider<?>>();
 
-                            } catch (ClassNotFoundException e) {
-                                throw new ValidationException("Failed to load provider " +
-                                        line + " configured in file " + url, e);
-                            }
-                        }
-                        line = br.readLine();
-                    }
-                    br.close();
-                } catch (IOException e) {
-                    throw new ValidationException("Error trying to read " + url, e);
-                } finally {
-                    if (br != null)
-                        br.close();
-                }
-            }
+        // get our classloader
+        final ClassLoader classLoader = PRIVILEGED.getClassLoader(getClass());
+
+        // find all service provider cfgs
+        final Enumeration<URL> cfgs;
+        try {
+            cfgs = classLoader.getResources(SPI_CFG);
         } catch (IOException e) {
-            throw new ValidationException("Error trying to read a " + SPI_CFG, e);
+            throw new ValidationException(String.format("Error trying to read a %s", SPI_CFG), e);
+        }
+
+        while (cfgs.hasMoreElements()) {
+            final URL url = cfgs.nextElement();
+            BufferedReader br = null;
+            try {
+                br = new BufferedReader(new InputStreamReader(url.openStream()), 256);
+                for (String line = br.readLine().trim(); line != null; line = br.readLine().trim()) {
+                    if (line.length() == 0 || line.charAt(0) == '#') {
+                        continue;
+                    }
+                    try {
+                        @SuppressWarnings("unchecked")
+                        Class<? extends ValidationProvider<?>> providerType =
+                            (Class<? extends ValidationProvider<?>>) PRIVILEGED.getClass(classLoader, line);
+                        target.add(providerType.newInstance());
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        throw new ValidationException(String.format(
+                            "Error creating ValidationProvider of type %s configured in resource %s", line, url), e);
+                    }
+                }
+            } catch (IOException e) {
+                throw new ValidationException(String.format("Error trying to read url %s", url), e);
+            } finally {
+                IOUtils.closeQuietly(br);
+            }
         }
         // caller must handle the case of no providers found
-        return providers;
+        return target;
     }
 }

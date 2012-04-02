@@ -22,7 +22,6 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
-import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.HashMap;
 import java.util.Map;
@@ -31,7 +30,7 @@ import javax.validation.Payload;
 import javax.validation.ValidationException;
 
 import org.apache.bval.jsr303.ConstraintAnnotationAttributes;
-import org.apache.bval.jsr303.util.SecureActions;
+import org.apache.bval.jsr303.util.Privileged;
 
 /**
  * Description: Holds the information and creates an annotation proxy during xml
@@ -40,6 +39,8 @@ import org.apache.bval.jsr303.util.SecureActions;
 // TODO move this guy up to org.apache.bval.jsr303 or
 // org.apache.bval.jsr303.model
 final public class AnnotationProxyBuilder<A extends Annotation> {
+    private static final Privileged PRIVILEGED = new Privileged();
+    
     private final Class<A> type;
     private final Map<String, Object> elements = new HashMap<String, Object>();
 
@@ -75,7 +76,7 @@ final public class AnnotationProxyBuilder<A extends Annotation> {
     public AnnotationProxyBuilder(A annot) {
         this((Class<A>) annot.annotationType());
         // Obtain the "elements" of the annotation
-        final Method[] methods = doPrivileged(SecureActions.getDeclaredMethods(annot.annotationType()));
+        final Method[] methods = PRIVILEGED.getDeclaredMethods(annot.annotationType());
         for (Method m : methods) {
             if (!m.isAccessible()) {
                 m.setAccessible(true);
@@ -176,11 +177,11 @@ final public class AnnotationProxyBuilder<A extends Annotation> {
      * @return {@link Annotation}
      */
     public A createAnnotation() {
-        ClassLoader classLoader = SecureActions.getClassLoader(getType());
+        ClassLoader classLoader = PRIVILEGED.getClassLoader(getType());
         @SuppressWarnings("unchecked")
         final Class<A> proxyClass = (Class<A>) Proxy.getProxyClass(classLoader, getType());
         final InvocationHandler handler = new AnnotationProxy(this);
-        return doPrivileged(new PrivilegedAction<A>() {
+        return PRIVILEGED.run(new PrivilegedAction<A>() {
             public A run() {
                 try {
                     Constructor<A> constructor = proxyClass.getConstructor(InvocationHandler.class);
@@ -192,11 +193,4 @@ final public class AnnotationProxyBuilder<A extends Annotation> {
         });
     }
 
-    private static <T> T doPrivileged(final PrivilegedAction<T> action) {
-        if (System.getSecurityManager() != null) {
-            return AccessController.doPrivileged(action);
-        } else {
-            return action.run();
-        }
-    }
 }

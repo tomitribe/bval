@@ -38,7 +38,7 @@ import javax.validation.ValidationException;
 import javax.validation.groups.Default;
 
 import org.apache.bval.jsr303.util.ConstraintDefinitionValidator;
-import org.apache.bval.jsr303.util.SecureActions;
+import org.apache.bval.jsr303.util.Privileged;
 import org.apache.bval.model.Features;
 import org.apache.bval.model.MetaBean;
 import org.apache.bval.model.MetaProperty;
@@ -48,13 +48,14 @@ import org.apache.commons.lang3.ClassUtils;
 import org.apache.commons.lang3.reflect.TypeUtils;
 
 /**
- * Description: implements uniform handling of JSR303 {@link Constraint}
- * annotations, including composed constraints and the resolution of
- * {@link ConstraintValidator} implementations.
+ * Description: implements uniform handling of JSR303 {@link Constraint} annotations, including composed constraints and
+ * the resolution of {@link ConstraintValidator} implementations.
  * 
  * @version $Rev: 996992 $ $Date: 2010-09-14 12:05:40 -0500 (Tue, 14 Sep 2010) $
  */
 public final class AnnotationProcessor {
+    private static final Privileged PRIVILEGED = new Privileged();
+
     /** {@link ApacheFactoryContext} used */
     private final ApacheFactoryContext factoryContext;
 
@@ -109,8 +110,8 @@ public final class AnnotationProcessor {
      * @throws IllegalAccessException
      * @throws InvocationTargetException
      */
-    public final <A extends Annotation> boolean processAnnotation(A annotation, Class<?> owner, AppendValidation appender)
-        throws IllegalAccessException, InvocationTargetException {
+    public final <A extends Annotation> boolean processAnnotation(A annotation, Class<?> owner,
+        AppendValidation appender) throws IllegalAccessException, InvocationTargetException {
         return processAnnotation(annotation, null, owner, null, appender);
     }
 
@@ -139,9 +140,8 @@ public final class AnnotationProcessor {
             return addAccessStrategy(prop, access);
         }
         /**
-         * An annotation is considered a constraint definition if its retention
-         * policy contains RUNTIME and if the annotation itself is annotated
-         * with javax.validation.Constraint.
+         * An annotation is considered a constraint definition if its retention policy contains RUNTIME and if the
+         * annotation itself is annotated with javax.validation.Constraint.
          */
         Constraint vcAnno = annotation.annotationType().getAnnotation(Constraint.class);
         if (vcAnno != null) {
@@ -151,13 +151,12 @@ public final class AnnotationProcessor {
             return applyConstraint(annotation, validatorClasses, prop, owner, access, appender);
         }
         /**
-         * Multi-valued constraints: To support this requirement, the bean
-         * validation provider treats regular annotations (annotations not
-         * annotated by @Constraint) whose value element has a return type of an
-         * array of constraint annotations in a special way.
+         * Multi-valued constraints: To support this requirement, the bean validation provider treats regular
+         * annotations (annotations not annotated by @Constraint) whose value element has a return type of an array of
+         * constraint annotations in a special way.
          */
         Object result =
-            SecureActions.getAnnotationValue(annotation, ConstraintAnnotationAttributes.VALUE.getAttributeName());
+            PRIVILEGED.getAnnotationValue(annotation, ConstraintAnnotationAttributes.VALUE.getAttributeName());
         if (result instanceof Annotation[]) {
             boolean changed = false;
             for (Annotation each : (Annotation[]) result) {
@@ -169,8 +168,7 @@ public final class AnnotationProcessor {
     }
 
     /**
-     * Add the specified {@link AccessStrategy} to <code>prop</code>; noop if
-     * <code>prop == null</code>.
+     * Add the specified {@link AccessStrategy} to <code>prop</code>; noop if <code>prop == null</code>.
      * 
      * @param prop
      * @param access
@@ -191,8 +189,7 @@ public final class AnnotationProcessor {
     }
 
     /**
-     * Find available {@link ConstraintValidation} classes for a given
-     * constraint annotation.
+     * Find available {@link ConstraintValidation} classes for a given constraint annotation.
      * 
      * @param annotation
      * @param vcAnno
@@ -223,8 +220,7 @@ public final class AnnotationProcessor {
      * @param annotation
      *            constraint annotation
      * @param constraintClasses
-     *            known {@link ConstraintValidator} implementation classes for
-     *            <code>annotation</code>
+     *            known {@link ConstraintValidator} implementation classes for <code>annotation</code>
      * @param prop
      *            meta-property
      * @param owner
@@ -288,12 +284,10 @@ public final class AnnotationProcessor {
         if (constraintClasses != null && constraintClasses.length > 0) {
             Type type = determineTargetedType(owner, access);
             /**
-             * spec says in chapter 3.5.3.: The ConstraintValidator chosen to
-             * validate a declared type T is the one where the type supported by
-             * the ConstraintValidator is a supertype of T and where there is no
-             * other ConstraintValidator whose supported type is a supertype of
-             * T and not a supertype of the chosen ConstraintValidator supported
-             * type.
+             * spec says in chapter 3.5.3.: The ConstraintValidator chosen to validate a declared type T is the one
+             * where the type supported by the ConstraintValidator is a supertype of T and where there is no other
+             * ConstraintValidator whose supported type is a supertype of T and not a supertype of the chosen
+             * ConstraintValidator supported type.
              */
             Map<Type, Class<? extends ConstraintValidator<A, ?>>> validatorTypes =
                 getValidatorsTypes(constraintClasses);
@@ -323,15 +317,15 @@ public final class AnnotationProcessor {
         if (types.isEmpty()) {
             StringBuilder buf =
                 new StringBuilder().append("No validator could be found for type ").append(stringForType(targetType))
-                    .append(". See: @").append(anno.annotationType().getSimpleName()).append(" at ").append(
-                        stringForLocation(owner, access));
+                    .append(". See: @").append(anno.annotationType().getSimpleName()).append(" at ")
+                    .append(stringForLocation(owner, access));
             throw new UnexpectedTypeException(buf.toString());
         } else if (types.size() > 1) {
             StringBuilder buf = new StringBuilder();
             buf.append("Ambiguous validators for type ");
             buf.append(stringForType(targetType));
-            buf.append(". See: @").append(anno.annotationType().getSimpleName()).append(" at ").append(
-                stringForLocation(owner, access));
+            buf.append(". See: @").append(anno.annotationType().getSimpleName()).append(" at ")
+                .append(stringForLocation(owner, access));
             buf.append(". Validators are: ");
             boolean comma = false;
             for (Type each : types) {
@@ -391,9 +385,8 @@ public final class AnnotationProcessor {
      * Tries to reduce all assignable classes down to a single class.
      * 
      * @param assignableTypes
-     *            The set of all classes which are assignable to the class of
-     *            the value to be validated and which are handled by at least
-     *            one of the validators for the specified constraint.
+     *            The set of all classes which are assignable to the class of the value to be validated and which are
+     *            handled by at least one of the validators for the specified constraint.
      */
     private static void reduceAssignableTypes(List<Type> assignableTypes) {
         if (assignableTypes.size() <= 1) {
@@ -419,8 +412,7 @@ public final class AnnotationProcessor {
     }
 
     /**
-     * Given a set of {@link ConstraintValidator} implementation classes, map
-     * those to their target types.
+     * Given a set of {@link ConstraintValidator} implementation classes, map those to their target types.
      * 
      * @param constraintValidatorClasses
      * @return {@link Map} of {@link Type} : {@link ConstraintValidator} subtype

@@ -18,8 +18,6 @@
  */
 package org.apache.bval.jsr303.util;
 
-import org.apache.commons.lang3.ClassUtils;
-
 import java.security.AccessController;
 import java.util.List;
 
@@ -57,26 +55,4 @@ public class ClassHelper {
         }
     }
 
-    /**
-     * @deprecated Will be removed for security reasons.
-     *
-     * Perform ClassUtils.getClass functions with Java 2 Security enabled.
-     */
-    @Deprecated
-    public static Class<?> getClass(String className) throws ClassNotFoundException {
-        return getClass(className, true);
-    }
-
-    /**
-     * @deprecated Will be removed for security reasons.
-     *
-     * Perform ClassUtils.getClass functions with Java 2 Security enabled.
-     */
-    @Deprecated
-    public static Class<?> getClass(String className, boolean initialize) throws ClassNotFoundException {
-        ClassLoader loader = Thread.currentThread().getContextClassLoader();
-        if (loader == null)
-          loader = ClassHelper.class.getClassLoader();
-        return ClassUtils.getClass(loader, className, initialize);
-    }
 }

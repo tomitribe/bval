@@ -30,7 +30,7 @@ import javax.validation.ConstraintDefinitionException;
 import javax.validation.Payload;
 import javax.validation.ValidationException;
 
-import org.apache.bval.jsr303.util.SecureActions;
+import org.apache.bval.jsr303.util.Privileged;
 import org.apache.commons.lang3.reflect.TypeUtils;
 
 /**
@@ -66,6 +66,8 @@ public enum ConstraintAnnotationAttributes {
         Class<? extends Payload>[] payload;
         Annotation[] value;
     }
+
+    private static final Privileged PRIVILEGED = new Privileged();
 
     private Type type;
     private boolean permitNullDefaultValue;
@@ -214,7 +216,7 @@ public enum ConstraintAnnotationAttributes {
             boolean _valid = true;
             Object _defaultValue = null;
             try {
-                method = doPrivileged(SecureActions.getPublicMethod(constraintType, getAttributeName()));
+                method = PRIVILEGED.getPublicMethod(constraintType, getAttributeName());
                 if (method == null) {
                     if (quiet) {
                         _valid = false;

@@ -40,7 +40,7 @@ import javax.validation.Payload;
 import javax.validation.ReportAsSingleViolation;
 
 import org.apache.bval.jsr303.groups.GroupsComputer;
-import org.apache.bval.jsr303.util.SecureActions;
+import org.apache.bval.jsr303.util.Privileged;
 import org.apache.bval.jsr303.xml.AnnotationProxyBuilder;
 import org.apache.bval.util.AccessStrategy;
 
@@ -51,6 +51,7 @@ import org.apache.bval.util.AccessStrategy;
  */
 final class AnnotationConstraintBuilder<A extends Annotation> {
     private static final Logger log = Logger.getLogger(AnnotationConstraintBuilder.class.getName());
+    private static final Privileged PRIVILEGED = new Privileged();
 
     private final ConstraintValidation<?> constraintValidation;
     private List<ConstraintOverrides> overrides;
@@ -77,7 +78,7 @@ final class AnnotationConstraintBuilder<A extends Annotation> {
     /** build attributes, payload, groups from 'annotation' */
     private void buildFromAnnotation() {
         if (constraintValidation.getAnnotation() != null) {
-            SecureActions.run(new PrivilegedAction<Object>() {
+            PRIVILEGED.run(new PrivilegedAction<Object>() {
                 public Object run() {
                     for (Method method : constraintValidation.getAnnotation().annotationType().getDeclaredMethods()) {
                         // groups + payload must also appear in attributes (also

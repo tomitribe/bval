@@ -34,6 +34,7 @@ import java.util.Locale;
  * @author Carlos Vara
  */
 public class ConstraintDefinitionValidator {
+    private static final Privileged PRIVILEGED = new Privileged();
 
     /**
      * Ensures that the constraint definition is valid.
@@ -57,9 +58,7 @@ public class ConstraintDefinitionValidator {
      *            The annotation to check.
      */
     private static void validAttributes(final Annotation annotation) {
-        final Method[] methods = SecureActions.run(
-            SecureActions.getDeclaredMethods(annotation.annotationType())
-        );
+        final Method[] methods = PRIVILEGED.getDeclaredMethods(annotation.annotationType());
         for (Method method : methods ){
             // Currently case insensitive, the spec is unclear about this
             if (method.getName().toLowerCase(Locale.ENGLISH).startsWith("valid")) {

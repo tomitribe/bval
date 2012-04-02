@@ -62,8 +62,6 @@ public class BootstrapTest extends TestCase {
         // with new state
         ApacheValidatorFactory factory2 = (ApacheValidatorFactory) Validation.buildDefaultValidatorFactory();
         Assert.assertTrue(factory2 != factory);
-        Assert.assertTrue(factory2.getMessageInterpolator() != factory.getMessageInterpolator());
-
     }
 
     public void testLocalizedMessageInterpolatorFactory() {

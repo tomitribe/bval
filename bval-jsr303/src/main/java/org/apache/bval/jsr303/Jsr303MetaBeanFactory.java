@@ -22,8 +22,6 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -38,7 +36,7 @@ import javax.validation.groups.Default;
 import org.apache.bval.MetaBeanFactory;
 import org.apache.bval.jsr303.groups.Group;
 import org.apache.bval.jsr303.util.ClassHelper;
-import org.apache.bval.jsr303.util.SecureActions;
+import org.apache.bval.jsr303.util.Privileged;
 import org.apache.bval.jsr303.xml.MetaConstraint;
 import org.apache.bval.model.MetaBean;
 import org.apache.bval.model.MetaProperty;
@@ -57,6 +55,8 @@ public class Jsr303MetaBeanFactory implements MetaBeanFactory {
 
     /** {@link ApacheFactoryContext} used */
     protected final ApacheFactoryContext factoryContext;
+    
+    private static final Privileged PRIVILEGED = new Privileged();
 
     /**
      * {@link AnnotationProcessor} used.
@@ -120,7 +120,7 @@ public class Jsr303MetaBeanFactory implements MetaBeanFactory {
                 metabean));
         }
 
-        final Field[] fields = doPrivileged(SecureActions.getDeclaredFields(beanClass));
+        final Field[] fields = PRIVILEGED.getDeclaredFields(beanClass);
         for (Field field : fields) {
             MetaProperty metaProperty = metabean.getProperty(field.getName());
             // create a property for those fields for which there is not yet a
@@ -137,7 +137,7 @@ public class Jsr303MetaBeanFactory implements MetaBeanFactory {
                 }
             }
         }
-        final Method[] methods = doPrivileged(SecureActions.getDeclaredMethods(beanClass));
+        final Method[] methods = PRIVILEGED.getDeclaredMethods(beanClass);
         for (Method method : methods) {
             String propName = null;
             if (method.getParameterTypes().length == 0) {
@@ -296,22 +296,4 @@ public class Jsr303MetaBeanFactory implements MetaBeanFactory {
         return result;
     }
 
-
-
-
-    /**
-     * Perform action with AccessController.doPrivileged() if a security manager is installed.
-     *
-     * @param action
-     *  the action to run
-     * @return
-     *  result of the action
-     */
-    private static <T> T doPrivileged(final PrivilegedAction<T> action) {
-        if (System.getSecurityManager() != null) {
-            return AccessController.doPrivileged(action);
-        } else {
-            return action.run();
-        }
-    }
 }

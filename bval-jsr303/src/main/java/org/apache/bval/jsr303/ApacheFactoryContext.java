@@ -19,7 +19,6 @@
 package org.apache.bval.jsr303;
 
 import java.lang.reflect.Constructor;
-import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,8 +35,7 @@ import org.apache.bval.MetaBeanBuilder;
 import org.apache.bval.MetaBeanFactory;
 import org.apache.bval.MetaBeanFinder;
 import org.apache.bval.MetaBeanManager;
-import org.apache.bval.jsr303.util.SecureActions;
-import org.apache.bval.util.PrivilegedActions;
+import org.apache.bval.jsr303.util.Privileged;
 import org.apache.bval.xml.XMLMetaBeanBuilder;
 import org.apache.bval.xml.XMLMetaBeanFactory;
 import org.apache.bval.xml.XMLMetaBeanManager;
@@ -45,10 +43,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.reflect.ConstructorUtils;
 
 /**
- * Description: Represents the context that is used to create
- * <code>ClassValidator</code> instances.<br/>
+ * Description: Represents the context that is used to create <code>ClassValidator</code> instances.<br/>
  */
 public class ApacheFactoryContext implements ValidatorContext {
+    private static final Privileged PRIVILEGED = new Privileged();
+
     private final ApacheValidatorFactory factory;
     private final MetaBeanFinder metaBeanFinder;
 
@@ -78,8 +77,7 @@ public class ApacheFactoryContext implements ValidatorContext {
     }
 
     /**
-     * Get the {@link ApacheValidatorFactory} used by this
-     * {@link ApacheFactoryContext}.
+     * Get the {@link ApacheValidatorFactory} used by this {@link ApacheFactoryContext}.
      * 
      * @return {@link ApacheValidatorFactory}
      */
@@ -163,17 +161,13 @@ public class ApacheFactoryContext implements ValidatorContext {
     /**
      * Create MetaBeanManager that uses factories:
      * <ol>
-     * <li>if enabled by
-     * {@link ApacheValidatorConfiguration.Properties#ENABLE_INTROSPECTOR}, an
+     * <li>if enabled by {@link ApacheValidatorConfiguration.Properties#ENABLE_INTROSPECTOR}, an
      * {@link IntrospectorMetaBeanFactory}</li>
      * <li>{@link MetaBeanFactory} types (if any) specified by
-     * {@link ApacheValidatorConfiguration.Properties#METABEAN_FACTORY_CLASSNAMES}
-     * </li>
-     * <li>if no {@link Jsr303MetaBeanFactory} has yet been specified (this
-     * allows factory order customization), a {@link Jsr303MetaBeanFactory}
-     * which handles both JSR303-XML and JSR303-Annotations</li>
-     * <li>if enabled by
-     * {@link ApacheValidatorConfiguration.Properties#ENABLE_METABEANS_XML}, an
+     * {@link ApacheValidatorConfiguration.Properties#METABEAN_FACTORY_CLASSNAMES}</li>
+     * <li>if no {@link Jsr303MetaBeanFactory} has yet been specified (this allows factory order customization), a
+     * {@link Jsr303MetaBeanFactory} which handles both JSR303-XML and JSR303-Annotations</li>
+     * <li>if enabled by {@link ApacheValidatorConfiguration.Properties#ENABLE_METABEANS_XML}, an
      * {@link XMLMetaBeanFactory}</li>
      * </ol>
      * 
@@ -186,8 +180,8 @@ public class ApacheFactoryContext implements ValidatorContext {
             builders.add(new IntrospectorMetaBeanFactory());
         }
         String[] factoryClassNames =
-            StringUtils.split(
-                factory.getProperties().get(ApacheValidatorConfiguration.Properties.METABEAN_FACTORY_CLASSNAMES));
+            StringUtils.split(factory.getProperties().get(
+                ApacheValidatorConfiguration.Properties.METABEAN_FACTORY_CLASSNAMES));
         if (factoryClassNames != null) {
             for (String clsName : factoryClassNames) {
                 // cast, relying on #createMetaBeanFactory to throw the exception if incompatible:
@@ -204,8 +198,9 @@ public class ApacheFactoryContext implements ValidatorContext {
             builders.add(new Jsr303MetaBeanFactory(this));
         }
         @SuppressWarnings("deprecation")
-        boolean enableMetaBeansXml = Boolean.parseBoolean(factory.getProperties().get(
-            ApacheValidatorConfiguration.Properties.ENABLE_METABEANS_XML));
+        boolean enableMetaBeansXml =
+            Boolean.parseBoolean(factory.getProperties().get(
+                ApacheValidatorConfiguration.Properties.ENABLE_METABEANS_XML));
         if (enableMetaBeansXml) {
             XMLMetaBeanManagerCreator.addFactory(builders);
         }
@@ -230,11 +225,12 @@ public class ApacheFactoryContext implements ValidatorContext {
     }
 
     private <F extends MetaBeanFactory> F createMetaBeanFactory(final Class<F> cls) {
-        return PrivilegedActions.run(new PrivilegedAction<F>() {
+        return PRIVILEGED.run(new PrivilegedAction<F>() {
 
             public F run() {
                 try {
-                    Constructor<F> c = ConstructorUtils.getMatchingAccessibleConstructor(cls, ApacheFactoryContext.this.getClass());
+                    Constructor<F> c =
+                        ConstructorUtils.getMatchingAccessibleConstructor(cls, ApacheFactoryContext.this.getClass());
                     if (c != null) {
                         return c.newInstance(ApacheFactoryContext.this);
                     }
@@ -251,9 +247,8 @@ public class ApacheFactoryContext implements ValidatorContext {
     }
 
     /**
-     * separate class to prevent the classloader to immediately load optional
-     * classes: XMLMetaBeanManager, XMLMetaBeanFactory, XMLMetaBeanBuilder that
-     * might not be available in the classpath
+     * separate class to prevent the classloader to immediately load optional classes: XMLMetaBeanManager,
+     * XMLMetaBeanFactory, XMLMetaBeanBuilder that might not be available in the classpath
      */
     private static class XMLMetaBeanManagerCreator {
 
@@ -262,8 +257,7 @@ public class ApacheFactoryContext implements ValidatorContext {
         }
 
         /**
-         * Create the {@link MetaBeanManager} to process JSR303 XML. Requires
-         * bval-xstream at RT.
+         * Create the {@link MetaBeanManager} to process JSR303 XML. Requires bval-xstream at RT.
          * 
          * @param builders
          * @return {@link MetaBeanManager}
@@ -277,23 +271,12 @@ public class ApacheFactoryContext implements ValidatorContext {
         }
     }
 
-    private static <T> T doPrivileged(final PrivilegedAction<T> action) {
-        if (System.getSecurityManager() != null) {
-            return AccessController.doPrivileged(action);
-        } else {
-            return action.run();
-        }
-    }
-
     private Class<?> loadClass(final String className) {
-        ClassLoader loader = doPrivileged(SecureActions.getContextClassLoader());
-        if (loader == null)
-            loader = getClass().getClassLoader();
-
         try {
-            return Class.forName(className, true, loader);
+            return PRIVILEGED.getClass(PRIVILEGED.getClassLoader(getClass()), className);
         } catch (ClassNotFoundException ex) {
-            throw new ValidationException("Unable to load class: " + className, ex);
+            throw new ValidationException(String.format("Unable to load class: %s", className), ex);
         }
     }
+
 }

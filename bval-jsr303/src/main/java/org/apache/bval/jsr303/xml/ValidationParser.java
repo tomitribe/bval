@@ -18,12 +18,13 @@
  */
 package org.apache.bval.jsr303.xml;
 
-
-import org.apache.bval.jsr303.ConfigurationImpl;
-import org.apache.bval.jsr303.util.IOUtils;
-import org.apache.bval.jsr303.util.SecureActions;
-import org.apache.bval.util.PrivilegedActions;
-import org.xml.sax.SAXException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.security.PrivilegedExceptionAction;
+import java.util.Enumeration;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.validation.ConstraintValidatorFactory;
 import javax.validation.MessageInterpolator;
@@ -31,21 +32,16 @@ import javax.validation.TraversableResolver;
 import javax.validation.ValidationException;
 import javax.validation.spi.ValidationProvider;
 import javax.xml.XMLConstants;
-import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Unmarshaller;
-import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
-import java.util.Enumeration;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
+import org.apache.bval.jsr303.ConfigurationImpl;
+import org.apache.bval.jsr303.util.IOUtils;
+import org.apache.bval.jsr303.util.Privileged;
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.xml.sax.SAXException;
 
 /**
  * Description: uses jaxb to parse validation.xml<br/>
@@ -56,7 +52,9 @@ public class ValidationParser {
     private static final String VALIDATION_CONFIGURATION_XSD =
             "META-INF/validation-configuration-1.0.xsd";
     private static final Logger log = Logger.getLogger(ValidationParser.class.getName());
-    protected final String validationXmlFile;
+    private static final Privileged PRIVILEGED = new Privileged();
+
+    private final String validationXmlFile;
 
     /**
      * Create a new ValidationParser instance.
@@ -64,11 +62,7 @@ public class ValidationParser {
      * @param file
      */
     public ValidationParser(String file) {
-        if (file == null) {
-            validationXmlFile = DEFAULT_VALIDATION_XML_FILE;
-        } else {
-            validationXmlFile = file;
-        }
+        this.validationXmlFile = ObjectUtils.defaultIfNull(file, DEFAULT_VALIDATION_XML_FILE);
     }
 
     /**
@@ -91,28 +85,18 @@ public class ValidationParser {
             	log.log(Level.FINEST, String.format("No %s found. Using annotation based configuration only.", validationXmlFile));
                 return null;
             }
-
             log.log(Level.FINEST, String.format("%s found.", validationXmlFile));
 
-            Schema schema = getSchema();
-            JAXBContext jc = JAXBContext.newInstance(ValidationConfigType.class);
-            Unmarshaller unmarshaller = jc.createUnmarshaller();
-            unmarshaller.setSchema(schema);
-            StreamSource stream = new StreamSource(inputStream);
-            JAXBElement<ValidationConfigType> root =
-                    unmarshaller.unmarshal(stream, ValidationConfigType.class);
-            return root.getValue();
-        } catch (JAXBException e) {
-            throw new ValidationException("Unable to parse " + validationXmlFile, e);
-        } catch (IOException e) {
+            return PRIVILEGED.unmarshallXml(getSchema(), inputStream, ValidationConfigType.class);
+        } catch (Exception e) {
             throw new ValidationException("Unable to parse " + validationXmlFile, e);
         } finally {
             IOUtils.closeQuietly(inputStream);
         }
     }
 
-    protected InputStream getInputStream(String path) throws IOException {
-        ClassLoader loader = PrivilegedActions.getClassLoader(getClass());
+    static InputStream getInputStream(String path) throws IOException {
+        final ClassLoader loader = PRIVILEGED.getClassLoader(ValidationParser.class);
         InputStream inputStream = loader.getResourceAsStream(path);
 
         if (inputStream != null) {
@@ -132,7 +116,7 @@ public class ValidationParser {
         return inputStream;
     }
 
-    private Schema getSchema() {
+    private static Schema getSchema() {
         return getSchema(VALIDATION_CONFIGURATION_XSD);
     }
 
@@ -143,9 +127,8 @@ public class ValidationParser {
      * @return {@link Schema}
      */
     static Schema getSchema(String xsd) {
-        ClassLoader loader = PrivilegedActions.getClassLoader(ValidationParser.class);
         SchemaFactory sf = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
-        URL schemaUrl = loader.getResource(xsd);
+        URL schemaUrl = PRIVILEGED.getClassLoader(ValidationParser.class).getResource(xsd);
         try {
             return sf.newSchema(schemaUrl);
         } catch (SAXException e) {
@@ -166,71 +149,61 @@ public class ValidationParser {
     private void applyProperties(ValidationConfigType xmlConfig, ConfigurationImpl target) {
         for (PropertyType property : xmlConfig.getProperty()) {
             if (log.isLoggable(Level.FINEST)) {
-                log.log(Level.FINEST, String.format("Found property '%s' with value '%s' in %s", property.getName(), property.getValue(), validationXmlFile));
+                log.log(Level.FINEST, String.format(
+                    "Found property '%s' with value '%s' in %s",
+                    property.getName(), property.getValue(), validationXmlFile));
             }
             target.addProperty(property.getName(), property.getValue());
         }
     }
 
-    @SuppressWarnings("unchecked")
     private void applyProviderClass(ValidationConfigType xmlConfig, ConfigurationImpl target) {
         String providerClassName = xmlConfig.getDefaultProvider();
         if (providerClassName != null) {
+            @SuppressWarnings("unchecked")
             Class<? extends ValidationProvider<?>> clazz =
-                    (Class<? extends ValidationProvider<?>>) loadClass(providerClassName);
+                (Class<? extends ValidationProvider<?>>) loadClass(providerClassName);
             target.setProviderClass(clazz);
             log.log(Level.INFO, String.format("Using %s as validation provider.", providerClassName));
         }
     }
 
-    @SuppressWarnings("unchecked")
     private void applyMessageInterpolator(ValidationConfigType xmlConfig,
                                           ConfigurationImpl target) {
         String messageInterpolatorClass = xmlConfig.getMessageInterpolator();
         if (target.getMessageInterpolator() == null) {
             if (messageInterpolatorClass != null) {
-                Class<MessageInterpolator> clazz = (Class<MessageInterpolator>)
-                        loadClass(messageInterpolatorClass);
+                @SuppressWarnings("unchecked")
+                Class<? extends MessageInterpolator> clazz =
+                    (Class<? extends MessageInterpolator>) loadClass(messageInterpolatorClass);
                 target.messageInterpolator(newInstance(clazz));
                 log.log(Level.INFO, String.format("Using %s as message interpolator.", messageInterpolatorClass));
             }
         }
     }
 
-    @SuppressWarnings("unchecked")
     private void applyTraversableResolver(ValidationConfigType xmlConfig,
                                           ConfigurationImpl target) {
         String traversableResolverClass = xmlConfig.getTraversableResolver();
         if (target.getTraversableResolver() == null) {
             if (traversableResolverClass != null) {
-                Class<TraversableResolver> clazz = (Class<TraversableResolver>)
-                        loadClass(traversableResolverClass);
+                @SuppressWarnings("unchecked")
+                Class<? extends TraversableResolver> clazz =
+                    (Class<? extends TraversableResolver>) loadClass(traversableResolverClass);
                 target.traversableResolver(newInstance(clazz));
                 log.log(Level.INFO, String.format("Using %s as traversable resolver.", traversableResolverClass));
             }
         }
     }
 
-    private <T> T newInstance(final Class<T> cls) {
-        return AccessController.doPrivileged(new PrivilegedAction<T>() {
-            public T run() {
-                try {
-                    return cls.newInstance();
-                } catch (final Exception ex) {
-                    throw new ValidationException("Cannot instantiate : " + cls, ex);
-                }
-            }
-        });
-    }
-
-    @SuppressWarnings("unchecked")
     private void applyConstraintFactory(ValidationConfigType xmlConfig,
                                         ConfigurationImpl target) {
         String constraintFactoryClass = xmlConfig.getConstraintValidatorFactory();
         if (target.getConstraintValidatorFactory() == null) {
             if (constraintFactoryClass != null) {
-                Class<ConstraintValidatorFactory> clazz = (Class<ConstraintValidatorFactory>)
-                        loadClass(constraintFactoryClass);
+                @SuppressWarnings("unchecked")
+                Class<? extends ConstraintValidatorFactory> clazz =
+                    (Class<? extends ConstraintValidatorFactory>) loadClass(constraintFactoryClass);
                 target.constraintValidatorFactory(newInstance(clazz));
                 log.log(Level.INFO, String.format("Using %s as constraint factory.", constraintFactoryClass));
             }
@@ -240,46 +213,40 @@ public class ValidationParser {
     private void applyMappingStreams(ValidationConfigType xmlConfig,
                                      ConfigurationImpl target) {
         for (JAXBElement<String> mappingFileNameElement : xmlConfig.getConstraintMapping()) {
-            String mappingFileName = mappingFileNameElement.getValue();
-            if (mappingFileName.startsWith("/")) {
-                // Classloader needs a path without a starting /
-                mappingFileName = mappingFileName.substring(1);
-            }
+            // Classloader needs a path without a starting /
+            String mappingFileName = StringUtils.removeStart(mappingFileNameElement.getValue(), "/");
             log.log(Level.FINEST, String.format("Trying to open input stream for %s", mappingFileName));
             InputStream in = null;
             try {
                 in = getInputStream(mappingFileName);
                 if (in == null) {
-                    throw new ValidationException(
-                            "Unable to open input stream for mapping file " +
-                                    mappingFileName);
+                    throw new ValidationException("Unable to open input stream for mapping file " + mappingFileName);
                 }
             } catch (IOException e) {
-                throw new ValidationException("Unable to open input stream for mapping file " +
-                        mappingFileName, e);
+                throw new ValidationException("Unable to open input stream for mapping file " + mappingFileName, e);
             }
             target.addMapping(in);
         }
     }
 
+    private static <T> T newInstance(final Class<T> cls) {
+        try {
+            return PRIVILEGED.run(new PrivilegedExceptionAction<T>() {
 
-    private static <T> T doPrivileged(final PrivilegedAction<T> action) {
-        if (System.getSecurityManager() != null) {
-            return AccessController.doPrivileged(action);
-        } else {
-            return action.run();
+                public T run() throws Exception {
+                    return cls.newInstance();
+                }
+            });
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
-    private Class<?> loadClass(final String className) {
-        ClassLoader loader = doPrivileged(SecureActions.getContextClassLoader());
-        if (loader == null)
-            loader = getClass().getClassLoader();
-
+    private static Class<?> loadClass(final String className) {
         try {
-            return Class.forName(className, true, loader);
-        } catch (ClassNotFoundException ex) {
-            throw new ValidationException("Unable to load class: " + className, ex);
+            return PRIVILEGED.getClass(PRIVILEGED.getClassLoader(ValidationParser.class), className);
+        } catch (ClassNotFoundException e) {
+            throw new ValidationException(String.format("Unable to load class %s", className), e.getCause());
         }
     }
 

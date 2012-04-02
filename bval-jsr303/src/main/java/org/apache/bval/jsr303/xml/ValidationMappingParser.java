@@ -16,7 +16,6 @@
  */
 package org.apache.bval.jsr303.xml;
 
-
 import java.io.InputStream;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
@@ -24,7 +23,6 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
-import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,24 +36,20 @@ import javax.validation.Constraint;
 import javax.validation.ConstraintValidator;
 import javax.validation.Payload;
 import javax.validation.ValidationException;
-import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
-import javax.xml.bind.Unmarshaller;
-import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
 
 import org.apache.bval.jsr303.ApacheValidatorFactory;
 import org.apache.bval.jsr303.ConstraintAnnotationAttributes;
 import org.apache.bval.jsr303.util.EnumerationConverter;
 import org.apache.bval.jsr303.util.IOUtils;
-import org.apache.bval.jsr303.util.SecureActions;
+import org.apache.bval.jsr303.util.Privileged;
 import org.apache.bval.util.FieldAccess;
 import org.apache.bval.util.MethodAccess;
 import org.apache.commons.beanutils.ConvertUtils;
 import org.apache.commons.beanutils.Converter;
 import org.apache.commons.lang3.StringUtils;
-
 
 /**
  * Uses JAXB to parse constraints.xml based on validation-mapping-1.0.xsd.<br>
@@ -68,6 +62,8 @@ public class ValidationMappingParser {
     private static final Set<ConstraintAnnotationAttributes> RESERVED_PARAMS = Collections.unmodifiableSet(EnumSet.of(
         ConstraintAnnotationAttributes.GROUPS, ConstraintAnnotationAttributes.MESSAGE,
         ConstraintAnnotationAttributes.PAYLOAD));
+
+    private static final Privileged PRIVILEGED = new Privileged();
 
     private final Set<Class<?>> processedClasses;
     private final ApacheValidatorFactory factory;
@@ -88,7 +84,14 @@ public class ValidationMappingParser {
      */
     public void processMappingConfig(Set<InputStream> xmlStreams) throws ValidationException {
         for (InputStream xmlStream : xmlStreams) {
-            ConstraintMappingsType mapping = parseXmlMappings(xmlStream);
+            ConstraintMappingsType mapping;
+            try {
+                mapping = PRIVILEGED.unmarshallXml(getSchema(), xmlStream, ConstraintMappingsType.class);
+            } catch (JAXBException e) {
+                throw new ValidationException("Failed to parse XML deployment descriptor file.", e);
+            } finally {
+                IOUtils.closeQuietly(xmlStream);
+            }
 
             String defaultPackage = mapping.getDefaultPackage();
             processConstraintDefinitions(mapping.getConstraintDefinition(), defaultPackage);
@@ -97,8 +100,7 @@ public class ValidationMappingParser {
                 if (!processedClasses.add(beanClass)) {
                     // spec: A given class must not be described more than once amongst all
                     //  the XML mapping descriptors.
-                    throw new ValidationException(
-                          beanClass.getName() + " has already be configured in xml.");
+                    throw new ValidationException(String.format("%s has already be configured in xml.", beanClass.getName()));
                 }
                 factory.getAnnotationIgnores()
                       .setDefaultIgnoreAnnotation(beanClass, bean.isIgnoreAnnotations());
@@ -110,28 +112,8 @@ public class ValidationMappingParser {
         }
     }
 
-    /** @param in XML stream to parse using the validation-mapping-1.0.xsd */
-    private ConstraintMappingsType parseXmlMappings(InputStream in) {
-        ConstraintMappingsType mappings;
-        try {
-            JAXBContext jc = JAXBContext.newInstance(ConstraintMappingsType.class);
-            Unmarshaller unmarshaller = jc.createUnmarshaller();
-            unmarshaller.setSchema(getSchema());
-            StreamSource stream = new StreamSource(in);
-            JAXBElement<ConstraintMappingsType> root =
-                  unmarshaller.unmarshal(stream, ConstraintMappingsType.class);
-            mappings = root.getValue();
-        } catch (JAXBException e) {
-            throw new ValidationException("Failed to parse XML deployment descriptor file.",
-                  e);
-        } finally {
-            IOUtils.closeQuietly(in);
-        }
-        return mappings;
-    }
-
     /** @return validation-mapping-1.0.xsd based schema */
-    private Schema getSchema() {
+    private static Schema getSchema() {
         return ValidationParser.getSchema(VALIDATION_MAPPING_XSD);
     }
 
@@ -196,7 +178,7 @@ public class ValidationMappingParser {
 
     private <A extends Annotation> Class<?> getAnnotationParameterType(
           final Class<A> annotationClass, final String name) {
-        final Method m = doPrivileged(SecureActions.getPublicMethod(annotationClass, name));
+        final Method m = PRIVILEGED.getPublicMethod(annotationClass, name);
         if (m == null) {
             throw new ValidationException("Annotation of type " + annotationClass.getName() +
                   " does not contain a parameter " + name + ".");
@@ -365,7 +347,7 @@ public class ValidationMappingParser {
             } else {
                 fieldNames.add(fieldName);
             }
-            final Field field = doPrivileged(SecureActions.getDeclaredField(beanClass, fieldName));
+            final Field field = PRIVILEGED.getDeclaredField(beanClass, fieldName);
             if (field == null) {
                 throw new ValidationException(
                       beanClass.getName() + " does not contain the fieldType  " + fieldName);
@@ -521,20 +503,8 @@ public class ValidationMappingParser {
         return clazz.contains(".");
     }
 
-
-
-    private static <T> T doPrivileged(final PrivilegedAction<T> action) {
-        if (System.getSecurityManager() != null) {
-            return AccessController.doPrivileged(action);
-        } else {
-            return action.run();
-        }
-    }
-
-
-
     private static Method getGetter(final Class<?> clazz, final String propertyName) {
-        return doPrivileged(new PrivilegedAction<Method>() {
+        return PRIVILEGED.run(new PrivilegedAction<Method>() {
             public Method run() {
                 try {
                     final String p = StringUtils.capitalize(propertyName);
@@ -551,17 +521,11 @@ public class ValidationMappingParser {
 
     }
 
-
-
     private Class<?> loadClass(final String className) {
-        ClassLoader loader = doPrivileged(SecureActions.getContextClassLoader());
-        if (loader == null)
-            loader = getClass().getClassLoader();
-
         try {
-            return Class.forName(className, true, loader);
+            return PRIVILEGED.getClass(PRIVILEGED.getClassLoader(getClass()), className);
         } catch (ClassNotFoundException ex) {
-            throw new ValidationException("Unable to load class: " + className, ex);
+            throw new ValidationException(String.format("Unable to load class %s", className), ex);
         }
     }
 

@@ -18,7 +18,6 @@
  */
 package org.apache.bval.jsr303;
 
-import java.security.AccessController;
 import java.security.PrivilegedAction;
 
 import javax.validation.Configuration;
@@ -28,11 +27,11 @@ import javax.validation.spi.BootstrapState;
 import javax.validation.spi.ConfigurationState;
 import javax.validation.spi.ValidationProvider;
 
-import org.apache.commons.lang3.ClassUtils;
+import org.apache.bval.jsr303.util.Privileged;
 
 /**
- * Description: Implementation of {@link ValidationProvider} for jsr303
- * implementation of the apache-validation framework.
+ * Description: Implementation of {@link ValidationProvider} for jsr303 implementation of the apache-validation
+ * framework.
  * <p/>
  * <br/>
  * User: roman.stumm <br/>
@@ -40,10 +39,10 @@ import org.apache.commons.lang3.ClassUtils;
  * Time: 14:45:41 <br/>
  */
 public class ApacheValidationProvider implements ValidationProvider<ApacheValidatorConfiguration> {
+    private static final Privileged PRIVILEGED = new Privileged();
 
     /**
-     * Learn whether a particular builder class is suitable for this
-     * {@link ValidationProvider}.
+     * Learn whether a particular builder class is suitable for this {@link ValidationProvider}.
      * 
      * @param builderClass
      * @return boolean suitability
@@ -81,10 +80,10 @@ public class ApacheValidationProvider implements ValidationProvider<ApacheValida
 
             if (validatorFactoryClassname == null)
                 validatorFactoryClass = ApacheValidatorFactory.class;
-            else
-            {
-                validatorFactoryClass
-                  = (Class<? extends ValidatorFactory>) ClassUtils.getClass(validatorFactoryClassname);
+            else {
+                validatorFactoryClass =
+                    (Class<? extends ValidatorFactory>) PRIVILEGED.getClass(PRIVILEGED.getClassLoader(getClass()),
+                        validatorFactoryClassname);
                 validatorFactoryClass.asSubclass(ValidatorFactory.class);
             }
         } catch (ValidationException ex) {
@@ -102,29 +101,20 @@ public class ApacheValidationProvider implements ValidationProvider<ApacheValida
         // No privileges should be required to access the constructor,
         // because the classloader of ApacheValidationProvider will always
         // be an ancestor of the loader of validatorFactoryClass.
-        return (System.getSecurityManager() == null)
-            ? instantiateValidatorFactory(validatorFactoryClass, configuration)
-            : AccessController.doPrivileged(new PrivilegedAction<ValidatorFactory>() {
-                  public ValidatorFactory run() {
-                      return instantiateValidatorFactory(validatorFactoryClass, configuration);
-                  }
-              });
+        return PRIVILEGED.run(new PrivilegedAction<ValidatorFactory>() {
+            public ValidatorFactory run() {
+                return instantiateValidatorFactory(validatorFactoryClass, configuration);
+            }
+        });
     }
 
-
-
     private static ValidatorFactory instantiateValidatorFactory(
-        final Class<? extends ValidatorFactory> validatorFactoryClass,
-        final ConfigurationState                configuration
-    ) {
-      try
-      {
-          return validatorFactoryClass.getConstructor(ConfigurationState.class).newInstance(configuration);
-      }
-      catch (final Exception ex)
-      {
-          throw new ValidationException("Cannot instantiate : " + validatorFactoryClass, ex);
-      }
+        final Class<? extends ValidatorFactory> validatorFactoryClass, final ConfigurationState configuration) {
+        try {
+            return validatorFactoryClass.getConstructor(ConfigurationState.class).newInstance(configuration);
+        } catch (final Exception ex) {
+            throw new ValidationException(String.format("Cannot instantiate %s", validatorFactoryClass), ex);
+        }
     }
 
 }

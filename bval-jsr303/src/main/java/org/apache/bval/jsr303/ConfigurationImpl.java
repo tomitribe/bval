@@ -18,27 +18,43 @@
  */
 package org.apache.bval.jsr303;
 
+import java.io.InputStream;
+import java.security.PrivilegedAction;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.logging.Logger;
 
-import org.apache.bval.jsr303.resolver.DefaultTraversableResolver;
-import org.apache.bval.jsr303.util.SecureActions;
-import org.apache.bval.jsr303.xml.ValidationParser;
-
-import javax.validation.*;
+import javax.validation.Configuration;
+import javax.validation.ConstraintValidatorFactory;
+import javax.validation.MessageInterpolator;
+import javax.validation.TraversableResolver;
+import javax.validation.ValidationException;
+import javax.validation.ValidationProviderResolver;
+import javax.validation.ValidatorFactory;
 import javax.validation.spi.BootstrapState;
 import javax.validation.spi.ConfigurationState;
 import javax.validation.spi.ValidationProvider;
-import java.io.InputStream;
-import java.util.*;
-import java.util.logging.Logger;
+
+import org.apache.bval.jsr303.resolver.DefaultTraversableResolver;
+import org.apache.bval.jsr303.util.Privileged;
+import org.apache.bval.jsr303.xml.ValidationParser;
 
 /**
- * Description: used to configure apache-validation for jsr303.
- * Implementation of Configuration that also implements ConfigurationState,
- * hence this can be passed to buildValidatorFactory(ConfigurationState).
- * <br/>
+ * Description: used to configure {@link ApacheValidatorFactory}. Implementation
+ * of {@link Configuration} that also implements {@link ConfigurationState},
+ * hence this can be passed to
+ * {@link ValidationProvider#buildValidatorFactory(ConfigurationState)}.
  */
 public class ConfigurationImpl implements ApacheValidatorConfiguration, ConfigurationState {
     private static final Logger log = Logger.getLogger(ConfigurationImpl.class.getName());
+    private static final Privileged PRIVILEGED = new Privileged();
+
+    private static volatile TraversableResolver defaultTraversableResolver;
+    private static volatile MessageInterpolator defaultMessageInterpolator;
+    private static volatile ConstraintValidatorFactory defaultConstraintValidatorFactory;
 
     /**
      * Configured {@link ValidationProvider}
@@ -73,42 +89,31 @@ public class ConfigurationImpl implements ApacheValidatorConfiguration, Configur
      * false = dirty flag (to prevent from multiple parsing validation.xml)
      */
     private boolean prepared = false;
-    private final TraversableResolver defaultTraversableResolver =
-          new DefaultTraversableResolver();
 
-    /**
-     * Default {@link MessageInterpolator}
-     */
-    protected final MessageInterpolator defaultMessageInterpolator =
-          new DefaultMessageInterpolator();
+    private final Set<InputStream> mappingStreams = new HashSet<InputStream>();
+    private final Map<String, String> properties = new HashMap<String, String>();
 
-    private final ConstraintValidatorFactory defaultConstraintValidatorFactory =
-          new DefaultConstraintValidatorFactory();
-    // END DEFAULTS
-
-    private Set<InputStream> mappingStreams = new HashSet<InputStream>();
-    private Map<String, String> properties = new HashMap<String, String>();
     private boolean ignoreXmlConfiguration = false;
 
     /**
      * Create a new ConfigurationImpl instance.
-     * @param aState
-     * @param aProvider
+     * @param bootstrapState
+     * @param provider
      */
-    public ConfigurationImpl(BootstrapState aState, ValidationProvider<?> aProvider) {
-        if (aProvider != null) {
-            this.provider = aProvider;
+    public ConfigurationImpl(BootstrapState bootstrapState, ValidationProvider<?> provider) {
+        this.provider = provider;
+        if (provider != null) {
             this.providerResolver = null;
-        } else if (aState != null) {
-            this.provider = null;
-            if (aState.getValidationProviderResolver() == null) {
-                providerResolver = aState.getDefaultValidationProviderResolver();
-            } else {
-                providerResolver = aState.getValidationProviderResolver();
-            }
-        } else {
-            throw new ValidationException("either provider or state are required");
+            return;
         }
+        if (bootstrapState != null) {
+            ValidationProviderResolver validationProviderResolver = bootstrapState.getValidationProviderResolver();
+            this.providerResolver =
+                validationProviderResolver == null ? bootstrapState.getDefaultValidationProviderResolver()
+                    : validationProviderResolver;
+            return;
+        }
+        throw new ValidationException("either ValidationProvider or BootstrapState is required");
     }
 
     /**
@@ -116,7 +121,7 @@ public class ConfigurationImpl implements ApacheValidatorConfiguration, Configur
      */
     public ApacheValidatorConfiguration traversableResolver(TraversableResolver resolver) {
         traversableResolver = resolver;
-        this.prepared = false;
+        prepared = false;
         return this;
     }
 
@@ -137,7 +142,7 @@ public class ConfigurationImpl implements ApacheValidatorConfiguration, Configur
      */
     public ConfigurationImpl messageInterpolator(MessageInterpolator resolver) {
         this.messageInterpolator = resolver;
-        this.prepared = false;
+        prepared = false;
         return this;
     }
 
@@ -147,7 +152,7 @@ public class ConfigurationImpl implements ApacheValidatorConfiguration, Configur
     public ConfigurationImpl constraintValidatorFactory(
           ConstraintValidatorFactory constraintFactory) {
         this.constraintValidatorFactory = constraintFactory;
-        this.prepared = false;
+        prepared = false;
         return this;
     }
 
@@ -215,6 +220,9 @@ public class ConfigurationImpl implements ApacheValidatorConfiguration, Configur
      * {@inheritDoc}
      */
     public MessageInterpolator getDefaultMessageInterpolator() {
+        if (defaultMessageInterpolator == null) {
+            defaultMessageInterpolator = new DefaultMessageInterpolator();
+        }
         return defaultMessageInterpolator;
     }
 
@@ -222,6 +230,9 @@ public class ConfigurationImpl implements ApacheValidatorConfiguration, Configur
      * {@inheritDoc}
      */
     public TraversableResolver getDefaultTraversableResolver() {
+        if (defaultTraversableResolver == null) {
+            defaultTraversableResolver = new DefaultTraversableResolver();
+        }
         return defaultTraversableResolver;
     }
 
@@ -229,6 +240,9 @@ public class ConfigurationImpl implements ApacheValidatorConfiguration, Configur
      * {@inheritDoc}
      */
     public ConstraintValidatorFactory getDefaultConstraintValidatorFactory() {
+        if (defaultConstraintValidatorFactory == null) {
+            defaultConstraintValidatorFactory = new DefaultConstraintValidatorFactory();
+        }
         return defaultConstraintValidatorFactory;
     }
 
@@ -239,20 +253,16 @@ public class ConfigurationImpl implements ApacheValidatorConfiguration, Configur
      * @throws ValidationException if the ValidatorFactory cannot be built
      */
     public ValidatorFactory buildValidatorFactory() {
-        return SecureActions.run(SecureActions.doPrivBuildValidatorFactory(this));
-    }
-
-    public ValidatorFactory doPrivBuildValidatorFactory() {
+        // execute with privileges where necessary:
         prepare();
-        if (provider != null) {
-            return provider.buildValidatorFactory(this);
-        } else {
-            return findProvider().buildValidatorFactory(this);
-        }
+        return findProvider().buildValidatorFactory(this);
     }
 
-    private void prepare() {
-        if (prepared) return;
+    private synchronized void prepare() {
+        if (prepared) {
+            return;
+        }
+        // TODO refactor xml vs. java bootstrapping priority
         parseValidationXml();
         applyDefaults();
         prepared = true;
@@ -262,22 +272,28 @@ public class ConfigurationImpl implements ApacheValidatorConfiguration, Configur
     private void parseValidationXml() {
         if (isIgnoreXmlConfiguration()) {
             log.info("ignoreXmlConfiguration == true");
-        } else {
-            new ValidationParser(getProperties().get(Properties.VALIDATION_XML_PATH))
-                  .processValidationConfig(this);
+            return;
         }
+        PRIVILEGED.run(new PrivilegedAction<Void>() {
+
+            public Void run() {
+                new ValidationParser(getProperties().get(
+                    Properties.VALIDATION_XML_PATH))
+                    .processValidationConfig(ConfigurationImpl.this);
+                return null;
+            }
+        });
     }
 
     private void applyDefaults() {
-        // make sure we use the defaults in case they haven't been provided yet
-        if (traversableResolver == null) {
-            traversableResolver = getDefaultTraversableResolver();
+        if (getMessageInterpolator() == null) {
+            messageInterpolator(getDefaultMessageInterpolator());
         }
-        if (messageInterpolator == null) {
-            messageInterpolator = getDefaultMessageInterpolator();
+        if (getTraversableResolver() == null) {
+            traversableResolver(getDefaultTraversableResolver());
         }
-        if (constraintValidatorFactory == null) {
-            constraintValidatorFactory = getDefaultConstraintValidatorFactory();
+        if (getConstraintValidatorFactory() == null) {
+            constraintValidatorFactory(getDefaultConstraintValidatorFactory());
         }
     }
 
@@ -297,35 +313,31 @@ public class ConfigurationImpl implements ApacheValidatorConfiguration, Configur
     }
 
     /**
-     * Get the configured {@link ValidationProvider}.
-     * @return {@link ValidationProvider}
-     */
-    public ValidationProvider<?> getProvider() {
-        return provider;
-    }
-
-    private ValidationProvider<?> findProvider() {
-        if (providerClass != null) {
-            for (ValidationProvider<?> provider : providerResolver
-                  .getValidationProviders()) {
-                if (providerClass.isAssignableFrom(provider.getClass())) {
-                    return provider;
-                }
-            }
-            throw new ValidationException(
-                  "Unable to find suitable provider: " + providerClass);
-        } else {
-            List<ValidationProvider<?>> providers = providerResolver.getValidationProviders();
-            return providers.get(0);
-        }
-    }
-
-    /**
      * Set {@link ValidationProvider} class.
      * @param providerClass
      */
     public void setProviderClass(Class<? extends ValidationProvider<?>> providerClass) {
         this.providerClass = providerClass;
+    }
+
+    private ValidationProvider<?> findProvider() {
+        if (provider != null) {
+            return provider;
+        }
+        final Iterator<ValidationProvider<?>> iter = providerResolver.getValidationProviders().iterator();
+        if (!iter.hasNext()) {
+            throw new ValidationException("No available ValidationProvider implementation");
+        }
+        if (providerClass == null) {
+            return iter.next();
+        }
+        while (iter.hasNext()) {
+            ValidationProvider<?> provider = iter.next();
+            if (providerClass.isInstance(provider)) {
+                return provider;
+            }
+        }
+        throw new ValidationException(String.format("Unable to find ValidationProvider of type %s", providerClass));
     }
 
 }

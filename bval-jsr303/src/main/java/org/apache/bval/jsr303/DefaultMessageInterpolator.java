@@ -16,8 +16,6 @@
  */
 package org.apache.bval.jsr303;
 
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.Locale;
 import java.util.Map;
 import java.util.MissingResourceException;
@@ -30,7 +28,7 @@ import java.util.regex.Pattern;
 
 import javax.validation.MessageInterpolator;
 
-import org.apache.bval.jsr303.util.SecureActions;
+import org.apache.bval.jsr303.util.Privileged;
 import org.apache.commons.lang3.ArrayUtils;
 
 /**
@@ -48,6 +46,7 @@ public class DefaultMessageInterpolator implements MessageInterpolator {
     /** Regular expression used to do message interpolation. */
     private static final Pattern messageParameterPattern =
           Pattern.compile("(\\{[\\w\\.]+\\})");
+    private static final Privileged PRIVILEGED = new Privileged();
 
     /** The default locale for the current user. */
     private Locale defaultLocale;
@@ -164,19 +163,24 @@ public class DefaultMessageInterpolator implements MessageInterpolator {
      */
     private ResourceBundle getFileBasedResourceBundle(Locale locale) {
         ResourceBundle rb = null;
-        final ClassLoader classLoader = doPrivileged(SecureActions.getContextClassLoader());
-        if (classLoader != null) {
-            rb = loadBundle(classLoader, locale,
-                  USER_VALIDATION_MESSAGES + " not found by thread local classloader");
-        }
-
         // 2011-03-27 jw: No privileged action required.
         // A class can always access the classloader of itself and of subclasses.
+        /*
+         * MJB: Most BVal code prefers the CCL, then the loader of a particular--usually the calling--class.
+         * the signature of Privileged#getClassLoader() simply expedites this in a syntactically compact
+         * manner, despite potentially (probably very rarely) calling for a classLoader using privileges
+         * it may not precisely need. Patches to improve upon the situation without unduly impacting
+         * code verbosity or runtime performace will certainly be entertained.
+         */
+        final ClassLoader classLoader = PRIVILEGED.getClassLoader(getClass());
+            rb = loadBundle(classLoader, locale,
+                  "%s not found by thread local classloader", USER_VALIDATION_MESSAGES);
+
         if (rb == null) {
             rb = loadBundle(
               getClass().getClassLoader(),
               locale,
-              USER_VALIDATION_MESSAGES + " not found by validator classloader"
+              "%s not found by validator classloader", USER_VALIDATION_MESSAGES
             );
         }
         if (rb != null) {
@@ -188,7 +192,7 @@ public class DefaultMessageInterpolator implements MessageInterpolator {
     }
 
     private ResourceBundle loadBundle(ClassLoader classLoader, Locale locale,
-                                      String message) {
+                                      String message, Object... params) {
         ResourceBundle rb = null;
         try {
             rb = ResourceBundle.getBundle(USER_VALIDATION_MESSAGES, locale, classLoader);
@@ -301,23 +305,4 @@ public class DefaultMessageInterpolator implements MessageInterpolator {
     private String sanitizeForAppendReplacement(String src) {
         return src.replace("\\", "\\\\").replace("$", "\\$");
     }
-
-
-
-    /**
-     * Perform action with AccessController.doPrivileged() if a security manager is installed.
-     *
-     * @param action
-     *  the action to run
-     * @return
-     *  result of the action
-     */
-    private static <T> T doPrivileged(final PrivilegedAction<T> action) {
-        if (System.getSecurityManager() != null) {
-            return AccessController.doPrivileged(action);
-        } else {
-            return action.run();
-        }
-    }
-
 }

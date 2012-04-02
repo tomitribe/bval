@@ -20,14 +20,12 @@ import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import org.apache.bval.jsr303.util.SecureActions;
+import org.apache.bval.jsr303.util.Privileged;
 
 /**
  * Description: <br/>
@@ -41,6 +39,8 @@ class AnnotationProxy implements Annotation, InvocationHandler, Serializable {
 
     /** Serialization version */
     private static final long serialVersionUID = 1L;
+
+    private static final Privileged PRIVILEGED = new Privileged();
 
     private final Class<? extends Annotation> annotationType;
     private final Map<String, Object> values;
@@ -59,9 +59,7 @@ class AnnotationProxy implements Annotation, InvocationHandler, Serializable {
     private <A extends Annotation> Map<String, Object> getAnnotationValues(AnnotationProxyBuilder<A> descriptor) {
         Map<String, Object> result = new HashMap<String, Object>();
         int processedValuesFromDescriptor = 0;
-        final Method[] declaredMethods = doPrivileged(
-          SecureActions.getDeclaredMethods(annotationType)
-        );
+        final Method[] declaredMethods = PRIVILEGED.getDeclaredMethods(annotationType);
         for (Method m : declaredMethods) {
             if (descriptor.contains(m.getName())) {
                 result.put(m.getName(), descriptor.getValue(m.getName()));
@@ -118,13 +116,4 @@ class AnnotationProxy implements Annotation, InvocationHandler, Serializable {
         return result;
     }
 
-
-
-    private static <T> T doPrivileged(final PrivilegedAction<T> action) {
-        if (System.getSecurityManager() != null) {
-            return AccessController.doPrivileged(action);
-        } else {
-            return action.run();
-        }
-    }
 }
