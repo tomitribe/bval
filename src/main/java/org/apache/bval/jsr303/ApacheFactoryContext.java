@@ -19,8 +19,6 @@
 package org.apache.bval.jsr303;
 
 import java.lang.reflect.Constructor;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -36,12 +34,13 @@ import org.apache.bval.MetaBeanBuilder;
 import org.apache.bval.MetaBeanFactory;
 import org.apache.bval.MetaBeanFinder;
 import org.apache.bval.MetaBeanManager;
-import org.apache.bval.jsr303.util.SecureActions;
 import org.apache.bval.xml.XMLMetaBeanBuilder;
 import org.apache.bval.xml.XMLMetaBeanFactory;
 import org.apache.bval.xml.XMLMetaBeanManager;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.reflect.ConstructorUtils;
+
+import mbenson.privileged.Privileged;
 
 /**
  * Description: Represents the context that is used to create
@@ -228,25 +227,21 @@ public class ApacheFactoryContext implements ValidatorContext {
         return new MetaBeanManager(new MetaBeanBuilder(builders.toArray(new MetaBeanFactory[builders.size()])));
     }
 
+    @Privileged
     private <F extends MetaBeanFactory> F createMetaBeanFactory(final Class<F> cls) {
-        return run(new PrivilegedAction<F>() {
-
-            public F run() {
-                try {
-                    Constructor<F> c = ConstructorUtils.getMatchingAccessibleConstructor(cls, ApacheFactoryContext.this.getClass());
-                    if (c != null) {
-                        return c.newInstance(ApacheFactoryContext.this);
-                    }
-                    c = ConstructorUtils.getMatchingAccessibleConstructor(cls, getFactory().getClass());
-                    if (c != null) {
-                        return c.newInstance(getFactory());
-                    }
-                    return cls.newInstance();
-                } catch (Exception e) {
-                    throw new ValidationException(e);
-                }
+        try {
+            Constructor<F> c = ConstructorUtils.getMatchingAccessibleConstructor(cls, ApacheFactoryContext.this.getClass());
+            if (c != null) {
+                return c.newInstance(ApacheFactoryContext.this);
             }
-        });
+            c = ConstructorUtils.getMatchingAccessibleConstructor(cls, getFactory().getClass());
+            if (c != null) {
+                return c.newInstance(getFactory());
+            }
+            return cls.newInstance();
+        } catch (Exception e) {
+            throw new ValidationException(e);
+        }
     }
 
     /**
@@ -276,18 +271,11 @@ public class ApacheFactoryContext implements ValidatorContext {
         }
     }
 
-    private static <T> T doPrivileged(final PrivilegedAction<T> action) {
-        if (System.getSecurityManager() != null) {
-            return AccessController.doPrivileged(action);
-        } else {
-            return action.run();
-        }
-    }
-
     private Class<?> loadClass(final String className) {
-        ClassLoader loader = doPrivileged(SecureActions.getContextClassLoader());
-        if (loader == null)
+        ClassLoader loader = contextClassLoader();
+        if (loader == null) {
             loader = getClass().getClassLoader();
+        }
 
         try {
             return Class.forName(className, true, loader);
@@ -296,11 +284,12 @@ public class ApacheFactoryContext implements ValidatorContext {
         }
     }
 
-    private static <T> T run(PrivilegedAction<T> action) {
-        if (System.getSecurityManager() != null) {
-            return AccessController.doPrivileged(action);
-        } else {
-            return action.run();
+    @Privileged
+    private static ClassLoader contextClassLoader() {
+        try {
+            return Thread.currentThread().getContextClassLoader();
+        } catch (Exception e) {
+            return null;
         }
     }
 }

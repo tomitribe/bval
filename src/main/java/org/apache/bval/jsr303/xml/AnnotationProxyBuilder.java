@@ -17,13 +17,10 @@
 package org.apache.bval.jsr303.xml;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Constructor;
+import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -31,7 +28,8 @@ import javax.validation.Payload;
 import javax.validation.ValidationException;
 
 import org.apache.bval.jsr303.ConstraintAnnotationAttributes;
-import org.apache.bval.jsr303.util.SecureActions;
+
+import mbenson.privileged.Privileged;
 
 /**
  * Description: Holds the information and creates an annotation proxy during xml
@@ -60,9 +58,7 @@ final public class AnnotationProxyBuilder<A extends Annotation> {
      */
     public AnnotationProxyBuilder(Class<A> annotationType, Map<String, Object> elements) {
         this(annotationType);
-        for (Map.Entry<String, Object> entry : elements.entrySet()) {
-            this.elements.put(entry.getKey(), entry.getValue());
-        }
+        this.elements.putAll(elements);
     }
 
     /**
@@ -75,21 +71,13 @@ final public class AnnotationProxyBuilder<A extends Annotation> {
     public AnnotationProxyBuilder(A annot) {
         this((Class<A>) annot.annotationType());
         // Obtain the "elements" of the annotation
-        final Method[] methods = doPrivileged(SecureActions.getDeclaredMethods(annot.annotationType()));
-        for (Method m : methods) {
-            if (!m.isAccessible()) {
-                m.setAccessible(true);
-            }
+        for (Method m : getDeclaredMethods(annot.annotationType())) {
             try {
                 Object value = m.invoke(annot);
                 this.elements.put(m.getName(), value);
-            } catch (IllegalArgumentException e) {
+            } catch (Exception e) {
                 // No args, so should not happen
-                throw new ValidationException("Cannot access annotation " + annot + " element: " + m.getName());
-            } catch (IllegalAccessException e) {
-                throw new ValidationException("Cannot access annotation " + annot + " element: " + m.getName());
-            } catch (InvocationTargetException e) {
-                throw new ValidationException("Cannot access annotation " + annot + " element: " + m.getName());
+                throw new ValidationException("Cannot access annotation " + annot + " element: " + m.getName(), e);
             }
         }
     }
@@ -176,27 +164,27 @@ final public class AnnotationProxyBuilder<A extends Annotation> {
      * @return {@link Annotation}
      */
     public A createAnnotation() {
-        ClassLoader classLoader = SecureActions.getClassLoader(getType());
-        @SuppressWarnings("unchecked")
-        final Class<A> proxyClass = (Class<A>) Proxy.getProxyClass(classLoader, getType());
-        final InvocationHandler handler = new AnnotationProxy(this);
-        return doPrivileged(new PrivilegedAction<A>() {
-            public A run() {
-                try {
-                    Constructor<A> constructor = proxyClass.getConstructor(InvocationHandler.class);
-                    return constructor.newInstance(handler);
-                } catch (Exception e) {
-                    throw new ValidationException("Unable to create annotation for configured constraint", e);
-                }
-            }
-        });
+        return create();
     }
 
-    private static <T> T doPrivileged(final PrivilegedAction<T> action) {
-        if (System.getSecurityManager() != null) {
-            return AccessController.doPrivileged(action);
-        } else {
-            return action.run();
+    @Privileged
+    private A create() {
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        if (cl == null) {
+            cl = type.getClassLoader();
         }
+        @SuppressWarnings("unchecked")
+        final A result = (A) Proxy.newProxyInstance(cl, new Class[] { type }, new AnnotationProxy(this));
+        return result;
     }
+
+    @Privileged
+    private static Method[] getDeclaredMethods(Class<?> type) {
+        Method[] result = type.getDeclaredMethods();
+        if (result.length > 0) {
+            AccessibleObject.setAccessible(result, true);
+        }
+        return result;
+    }
+
 }

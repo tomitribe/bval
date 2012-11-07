@@ -19,10 +19,9 @@
 package org.apache.bval.jsr303;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -43,6 +42,8 @@ import javax.validation.ReportAsSingleViolation;
 import org.apache.bval.jsr303.groups.GroupsComputer;
 import org.apache.bval.jsr303.xml.AnnotationProxyBuilder;
 import org.apache.bval.util.AccessStrategy;
+
+import mbenson.privileged.Privileged;
 
 /**
  * Description: helper class that builds a {@link ConstraintValidation} or its
@@ -77,30 +78,25 @@ final class AnnotationConstraintBuilder<A extends Annotation> {
     /** build attributes, payload, groups from 'annotation' */
     private void buildFromAnnotation() {
         if (constraintValidation.getAnnotation() != null) {
-            run(new PrivilegedAction<Object>() {
-                public Object run() {
-                    for (Method method : constraintValidation.getAnnotation().annotationType().getDeclaredMethods()) {
-                        // groups + payload must also appear in attributes (also
-                        // checked by TCK-Tests)
-                        if (method.getParameterTypes().length == 0) {
-                            try {
-                                if (ConstraintAnnotationAttributes.PAYLOAD.getAttributeName().equals(method.getName())) {
-                                    buildPayload(method);
-                                } else if (ConstraintAnnotationAttributes.GROUPS.getAttributeName().equals(
-                                    method.getName())) {
-                                    buildGroups(method);
-                                } else {
-                                    constraintValidation.getAttributes().put(method.getName(),
-                                        method.invoke(constraintValidation.getAnnotation()));
-                                }
-                            } catch (Exception e) { // do nothing
-                                log.log(Level.WARNING, String.format("Error processing annotation: %s ", constraintValidation.getAnnotation()), e);
-                            }
+            for (Method method : getDeclaredMethods(constraintValidation.getAnnotation().annotationType())) {
+                // groups + payload must also appear in attributes (also
+                // checked by TCK-Tests)
+                if (method.getParameterTypes().length == 0) {
+                    try {
+                        if (ConstraintAnnotationAttributes.PAYLOAD.getAttributeName().equals(method.getName())) {
+                            buildPayload(method);
+                        } else if (ConstraintAnnotationAttributes.GROUPS.getAttributeName().equals(
+                            method.getName())) {
+                            buildGroups(method);
+                        } else {
+                            constraintValidation.getAttributes().put(method.getName(),
+                                method.invoke(constraintValidation.getAnnotation()));
                         }
+                    } catch (Exception e) { // do nothing
+                        log.log(Level.WARNING, String.format("Error processing annotation: %s ", constraintValidation.getAnnotation()), e);
                     }
-                    return null;
                 }
-            });
+            }
         }
     }
 
@@ -201,7 +197,7 @@ final class AnnotationConstraintBuilder<A extends Annotation> {
     /** read overridesAttributes from constraintValidation.annotation */
     private void buildOverridesAttributes() {
         overrides = new LinkedList<ConstraintOverrides>();
-        for (Method method : constraintValidation.getAnnotation().annotationType().getDeclaredMethods()) {
+        for (Method method : getDeclaredMethods(constraintValidation.getAnnotation().annotationType())) {
             OverridesAttribute.List annoOAL = method.getAnnotation(OverridesAttribute.List.class);
             if (annoOAL != null) {
                 for (OverridesAttribute annoOA : annoOAL.value()) {
@@ -266,11 +262,10 @@ final class AnnotationConstraintBuilder<A extends Annotation> {
         }
     }
 
-    private static <T> T run(PrivilegedAction<T> action) {
-        if (System.getSecurityManager() != null) {
-            return AccessController.doPrivileged(action);
-        } else {
-            return action.run();
-        }
+    @Privileged
+    private static Method[] getDeclaredMethods(Class<?> type) {
+        Method[] result = type.getDeclaredMethods();
+        AccessibleObject.setAccessible(result, true);
+        return result;
     }
 }

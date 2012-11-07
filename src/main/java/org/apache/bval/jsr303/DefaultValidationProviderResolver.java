@@ -16,7 +16,6 @@
  */
 package org.apache.bval.jsr303;
 
-
 import javax.validation.ValidationException;
 import javax.validation.ValidationProviderResolver;
 import javax.validation.spi.ValidationProvider;
@@ -24,11 +23,11 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
+
+import mbenson.privileged.Privileged;
 
 public class DefaultValidationProviderResolver implements ValidationProviderResolver {
 
@@ -60,20 +59,10 @@ public class DefaultValidationProviderResolver implements ValidationProviderReso
                         if (!line.startsWith("#")) {
                             try {
                                 // try loading the specified class
-                                final Class<?> provider = cl.loadClass(line);
+                                final Class<? extends ValidationProvider> provider = cl.loadClass(line).asSubclass(ValidationProvider.class);
                                 // create an instance to return
-                                ValidationProvider<?> vp =
-                                        AccessController.doPrivileged(new PrivilegedAction<ValidationProvider<?>>() {
-                                            public ValidationProvider<?> run() {
-                                                try {
-                                                    return (ValidationProvider<?>) provider.newInstance();
-                                                } catch (final Exception ex) {
-                                                    throw new ValidationException("Cannot instantiate : " + provider, ex);
-                                                }
-                                            }
-                                        });
-                                 providers.add(vp);
-
+                                final ValidationProvider<?> vp = createInstance(provider);
+                                providers.add(vp);
                             } catch (ClassNotFoundException e) {
                                 throw new ValidationException("Failed to load provider " +
                                         line + " configured in file " + url, e);
@@ -94,5 +83,14 @@ public class DefaultValidationProviderResolver implements ValidationProviderReso
         }
         // caller must handle the case of no providers found
         return providers;
+    }
+
+    @Privileged
+    private static <T> T createInstance(Class<? extends T> type) {
+        try {
+            return type.newInstance();
+        } catch (final Exception ex) {
+            throw new ValidationException("Cannot instantiate : " + type, ex);
+        }
     }
 }

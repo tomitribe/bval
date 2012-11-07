@@ -23,6 +23,7 @@ import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Array;
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,7 +39,6 @@ import javax.validation.ValidationException;
 import javax.validation.groups.Default;
 
 import org.apache.bval.jsr303.util.ConstraintDefinitionValidator;
-import org.apache.bval.jsr303.util.SecureActions;
 import org.apache.bval.model.Features;
 import org.apache.bval.model.MetaBean;
 import org.apache.bval.model.MetaProperty;
@@ -46,6 +46,8 @@ import org.apache.bval.util.AccessStrategy;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.ClassUtils;
 import org.apache.commons.lang3.reflect.TypeUtils;
+
+import mbenson.privileged.Privileged;
 
 /**
  * Description: implements uniform handling of JSR303 {@link Constraint}
@@ -154,8 +156,7 @@ public final class AnnotationProcessor {
          * annotated by @Constraint) whose value element has a return type of an
          * array of constraint annotations in a special way.
          */
-        Object result =
-            SecureActions.getAnnotationValue(annotation, ConstraintAnnotationAttributes.VALUE.getAttributeName());
+        final Object result = getAnnotationValue(annotation, ConstraintAnnotationAttributes.VALUE.getAttributeName());
         if (result instanceof Annotation[]) {
             boolean changed = false;
             for (Annotation each : (Annotation[]) result) {
@@ -446,6 +447,28 @@ public final class AnnotationProcessor {
             validatorsTypes.put(validatedType, validatorType);
         }
         return validatorsTypes;
+    }
+
+    private static Object getAnnotationValue(Annotation host, String name) {
+        Method m = getAccessor(host.annotationType(), name);
+        try {
+            return m.invoke(host);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    @Privileged
+    private static Method getAccessor(Class type, String name) {
+        final Method m;
+        try {
+            m = type.getDeclaredMethod(name);
+        } catch (NoSuchMethodException e) {
+            return null;
+        }
+        // Shouldn't annotation values already be accessible?
+        m.setAccessible(true);
+        return m;
     }
 
 }

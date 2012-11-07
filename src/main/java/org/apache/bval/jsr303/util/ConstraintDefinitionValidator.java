@@ -25,9 +25,9 @@ import org.apache.bval.jsr303.ConstraintAnnotationAttributes;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.Locale;
+
+import mbenson.privileged.Privileged;
 
 /**
  * Internal validator that ensures the correct definition of constraint
@@ -59,8 +59,7 @@ public class ConstraintDefinitionValidator {
      *            The annotation to check.
      */
     private static void validAttributes(final Annotation annotation) {
-        final Method[] methods = run(SecureActions.getDeclaredMethods(annotation.annotationType()));
-        for (Method method : methods ){
+        for (Method method : getDeclaredMethods(annotation.annotationType())) {
             // Currently case insensitive, the spec is unclear about this
             if (method.getName().toLowerCase(Locale.ENGLISH).startsWith("valid")) {
                 throw new ConstraintDefinitionException(
@@ -69,11 +68,8 @@ public class ConstraintDefinitionValidator {
         }
     }
 
-    private static <T> T run(PrivilegedAction<T> action) {
-        if (System.getSecurityManager() != null) {
-            return AccessController.doPrivileged(action);
-        } else {
-            return action.run();
-        }
+    @Privileged
+    private static Method[] getDeclaredMethods(Class<?> type) {
+        return type.getDeclaredMethods();
     }
 }

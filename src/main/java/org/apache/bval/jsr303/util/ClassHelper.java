@@ -18,20 +18,16 @@
  */
 package org.apache.bval.jsr303.util;
 
-import org.apache.commons.lang3.ClassUtils;
-
-import java.security.AccessController;
 import java.util.List;
 
 /**
- * Common operations on classes that do not require an {@link AccessController}.
+ * Common Class operations that do not involve Java security checks.
  * 
  * @author Carlos Vara
  */
 public class ClassHelper {
 
     private ClassHelper() {
-        // No instances please
     }
 
     /**
@@ -43,7 +39,7 @@ public class ClassHelper {
      * @param clazz
      *            The current class, root of the hierarchy to traverse.
      */
-    static public void fillFullClassHierarchyAsList(List<Class<?>> allClasses, Class<?> clazz) {
+    public static void fillFullClassHierarchyAsList(List<Class<?>> allClasses, Class<?> clazz) {
         if (clazz == null || clazz == Object.class) {
             return;
         }
@@ -57,26 +53,4 @@ public class ClassHelper {
         }
     }
 
-    /**
-     * @deprecated Will be removed for security reasons.
-     *
-     * Perform ClassUtils.getClass functions with Java 2 Security enabled.
-     */
-    @Deprecated
-    public static Class<?> getClass(String className) throws ClassNotFoundException {
-        return getClass(className, true);
-    }
-
-    /**
-     * @deprecated Will be removed for security reasons.
-     *
-     * Perform ClassUtils.getClass functions with Java 2 Security enabled.
-     */
-    @Deprecated
-    public static Class<?> getClass(String className, boolean initialize) throws ClassNotFoundException {
-        ClassLoader loader = Thread.currentThread().getContextClassLoader();
-        if (loader == null)
-          loader = ClassHelper.class.getClassLoader();
-        return ClassUtils.getClass(loader, className, initialize);
-    }
 }

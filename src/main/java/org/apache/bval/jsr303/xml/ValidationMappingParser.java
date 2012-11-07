@@ -16,7 +16,6 @@
  */
 package org.apache.bval.jsr303.xml;
 
-
 import java.io.InputStream;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
@@ -24,8 +23,6 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -49,13 +46,13 @@ import org.apache.bval.jsr303.ApacheValidatorFactory;
 import org.apache.bval.jsr303.ConstraintAnnotationAttributes;
 import org.apache.bval.jsr303.util.EnumerationConverter;
 import org.apache.bval.jsr303.util.IOUtils;
-import org.apache.bval.jsr303.util.SecureActions;
 import org.apache.bval.util.FieldAccess;
 import org.apache.bval.util.MethodAccess;
 import org.apache.commons.beanutils.ConvertUtils;
 import org.apache.commons.beanutils.Converter;
 import org.apache.commons.lang3.StringUtils;
 
+import mbenson.privileged.Privileged;
 
 /**
  * Uses JAXB to parse constraints.xml based on validation-mapping-1.0.xsd.<br>
@@ -196,7 +193,7 @@ public class ValidationMappingParser {
 
     private <A extends Annotation> Class<?> getAnnotationParameterType(
           final Class<A> annotationClass, final String name) {
-        final Method m = doPrivileged(SecureActions.getPublicMethod(annotationClass, name));
+        final Method m = getMethod(annotationClass, name);
         if (m == null) {
             throw new ValidationException("Annotation of type " + annotationClass.getName() +
                   " does not contain a parameter " + name + ".");
@@ -365,7 +362,7 @@ public class ValidationMappingParser {
             } else {
                 fieldNames.add(fieldName);
             }
-            final Field field = doPrivileged(SecureActions.getDeclaredField(beanClass, fieldName));
+            final Field field = getDeclaredField(beanClass, fieldName);
             if (field == null) {
                 throw new ValidationException(
                       beanClass.getName() + " does not contain the fieldType  " + fieldName);
@@ -521,43 +518,21 @@ public class ValidationMappingParser {
         return clazz.contains(".");
     }
 
-
-
-    private static <T> T doPrivileged(final PrivilegedAction<T> action) {
-        if (System.getSecurityManager() != null) {
-            return AccessController.doPrivileged(action);
-        } else {
-            return action.run();
-        }
-    }
-
-
-
     private static Method getGetter(final Class<?> clazz, final String propertyName) {
-        return doPrivileged(new PrivilegedAction<Method>() {
-            public Method run() {
-                try {
-                    final String p = StringUtils.capitalize(propertyName);
-                    try {
-                        return clazz.getMethod("get" + p);
-                    } catch (NoSuchMethodException e) {
-                        return clazz.getMethod("is" + p);
-                    }
-                } catch (NoSuchMethodException e) {
-                    return null;
-                }
-            }
-        });
-
+        final String p = StringUtils.capitalize(propertyName);
+        Method result = getMethod(clazz, "get" + p);
+        if (result == null) {
+            result = getMethod(clazz, "is" + p);
+        }
+        return result;
     }
-
-
 
     private Class<?> loadClass(final String className) {
-        ClassLoader loader = doPrivileged(SecureActions.getContextClassLoader());
-        if (loader == null)
-            loader = getClass().getClassLoader();
+        ClassLoader loader = contextClassLoader();
 
+        if (loader == null) {
+            loader = getClass().getClassLoader();
+        }
         try {
             return Class.forName(className, true, loader);
         } catch (ClassNotFoundException ex) {
@@ -565,4 +540,30 @@ public class ValidationMappingParser {
         }
     }
 
+    @Privileged
+    private static ClassLoader contextClassLoader() {
+        try {
+            return Thread.currentThread().getContextClassLoader();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    @Privileged
+    private static Method getMethod(Class<?> host, String name, Class<?>... argTypes) {
+        try {
+            return host.getMethod(name, argTypes);
+        } catch (NoSuchMethodException e) {
+            return null;
+        }
+    }
+
+    @Privileged
+    private static Field getDeclaredField(Class<?> host, String name) {
+        try {
+            return host.getDeclaredField(name);
+        } catch (NoSuchFieldException e) {
+            return null;
+        }
+    }
 }

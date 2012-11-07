@@ -38,12 +38,6 @@ grant codeBase "file://${user.home}/.m2/repository/org/apache/maven/-"
   permission java.security.AllPermission;
 };
 
-// junit;
-grant codeBase "file://${user.home}/.m2/repository/junit/-"
-{
-  permission java.security.AllPermission;
-};
-
 // mockito;
 grant codeBase "file://${user.home}/.m2/repository/org/mockito/-"
 {

@@ -18,16 +18,15 @@ package org.apache.bval.jsr303.xml;
 
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.TreeMap;
 
-import org.apache.bval.jsr303.util.SecureActions;
+import mbenson.privileged.Privileged;
 
 /**
  * Description: <br/>
@@ -56,13 +55,10 @@ class AnnotationProxy implements Annotation, InvocationHandler, Serializable {
         values = getAnnotationValues(descriptor);
     }
 
-    private <A extends Annotation> Map<String, Object> getAnnotationValues(AnnotationProxyBuilder<A> descriptor) {
-        Map<String, Object> result = new HashMap<String, Object>();
+    private static <A extends Annotation> Map<String, Object> getAnnotationValues(AnnotationProxyBuilder<A> descriptor) {
+        Map<String, Object> result = new TreeMap<String, Object>();
         int processedValuesFromDescriptor = 0;
-        final Method[] declaredMethods = doPrivileged(
-          SecureActions.getDeclaredMethods(annotationType)
-        );
-        for (Method m : declaredMethods) {
+        for (Method m : getDeclaredMethods(descriptor.getType())) {
             if (descriptor.contains(m.getName())) {
                 result.put(m.getName(), descriptor.getValue(m.getName()));
                 processedValuesFromDescriptor++;
@@ -73,7 +69,7 @@ class AnnotationProxy implements Annotation, InvocationHandler, Serializable {
             }
         }
         if (processedValuesFromDescriptor != descriptor.size()) {
-            throw new RuntimeException("Trying to instanciate " + annotationType + " with unknown paramters.");
+            throw new RuntimeException("Trying to instantiate " + descriptor.getType() + " with unknown paramters.");
         }
         return result;
     }
@@ -99,32 +95,26 @@ class AnnotationProxy implements Annotation, InvocationHandler, Serializable {
      * {@inheritDoc}
      */
     public String toString() {
-        StringBuilder result = new StringBuilder();
-        result.append('@').append(annotationType().getName()).append('(');
+        StringBuilder result = new StringBuilder().append('@').append(annotationType().getName()).append('(');
         boolean comma = false;
-        for (String m : getMethodsSorted()) {
-            if (comma)
+        for (Map.Entry<String, Object> e : values.entrySet()) {
+            if (comma) {
                 result.append(", ");
-            result.append(m).append('=').append(values.get(m));
-            comma = true;
+            } else {
+                comma = true;
+            }
+            result.append(e.getKey()).append('=').append(e.getValue());
         }
-        result.append(")");
-        return result.toString();
+        return result.append(")").toString();
     }
 
-    private SortedSet<String> getMethodsSorted() {
-        SortedSet<String> result = new TreeSet<String>();
-        result.addAll(values.keySet());
+    @Privileged
+    private static Method[] getDeclaredMethods(Class<?> type) {
+        Method[] result = type.getDeclaredMethods();
+        if (result.length > 0) {
+            AccessibleObject.setAccessible(result, true);
+        }
         return result;
     }
 
-
-
-    private static <T> T doPrivileged(final PrivilegedAction<T> action) {
-        if (System.getSecurityManager() != null) {
-            return AccessController.doPrivileged(action);
-        } else {
-            return action.run();
-        }
-    }
 }

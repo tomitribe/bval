@@ -32,6 +32,8 @@ import org.mockito.stubbing.Answer;
 import javax.validation.ConstraintValidatorContext;
 import javax.validation.ConstraintValidatorContext.ConstraintViolationBuilder;
 
+import mbenson.privileged.Privileged;
+
 /**
  * Checks to validate the correct implementation of
  * {@link ConstraintValidatorContext} and its sub-interfaces.
@@ -50,6 +52,7 @@ public class ConstraintValidatorContextTest extends TestCase {
      * {@inheritDoc}
      */
     @Override
+    @Privileged
     public void setUp() throws Exception {
         super.setUp();
         MockitoAnnotations.initMocks(this);

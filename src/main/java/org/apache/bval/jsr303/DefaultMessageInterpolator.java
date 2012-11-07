@@ -16,8 +16,6 @@
  */
 package org.apache.bval.jsr303;
 
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.Locale;
 import java.util.Map;
 import java.util.MissingResourceException;
@@ -30,8 +28,9 @@ import java.util.regex.Pattern;
 
 import javax.validation.MessageInterpolator;
 
-import org.apache.bval.jsr303.util.SecureActions;
 import org.apache.commons.lang3.ArrayUtils;
+
+import mbenson.privileged.Privileged;
 
 /**
  * Description: Resource bundle backed message interpolator.
@@ -164,14 +163,12 @@ public class DefaultMessageInterpolator implements MessageInterpolator {
      */
     private ResourceBundle getFileBasedResourceBundle(Locale locale) {
         ResourceBundle rb = null;
-        final ClassLoader classLoader = doPrivileged(SecureActions.getContextClassLoader());
+        final ClassLoader classLoader = contextClassLoader();
         if (classLoader != null) {
             rb = loadBundle(classLoader, locale,
                   USER_VALIDATION_MESSAGES + " not found by thread local classloader");
         }
 
-        // 2011-03-27 jw: No privileged action required.
-        // A class can always access the classloader of itself and of subclasses.
         if (rb == null) {
             rb = loadBundle(
               getClass().getClassLoader(),
@@ -302,22 +299,12 @@ public class DefaultMessageInterpolator implements MessageInterpolator {
         return src.replace("\\", "\\\\").replace("$", "\\$");
     }
 
-
-
-    /**
-     * Perform action with AccessController.doPrivileged() if a security manager is installed.
-     *
-     * @param action
-     *  the action to run
-     * @return
-     *  result of the action
-     */
-    private static <T> T doPrivileged(final PrivilegedAction<T> action) {
-        if (System.getSecurityManager() != null) {
-            return AccessController.doPrivileged(action);
-        } else {
-            return action.run();
+    @Privileged
+    private ClassLoader contextClassLoader() {
+        try {
+            return Thread.currentThread().getContextClassLoader();
+        } catch (Exception e) {
+            return null;
         }
     }
-
 }

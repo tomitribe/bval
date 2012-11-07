@@ -104,7 +104,12 @@
                                 <include>**/*Test.java</include>
                                 <include>**/*TestCase.java</include>
                             </includes>
-                            <argLine>-Djava.security.manager -Djava.security.policy=${project.basedir}/src/test/resources/java.policy</argLine>
+                            <forkMode>once</forkMode>
+                            <systemPropertyVariables>
+                                <surefire.security.manager>java.lang.SecurityManager</surefire.security.manager>
+                                <java.security.policy>${project.basedir}/src/test/resources/java.policy</java.security.policy>
+                                <user.dir>${project.basedir}</user.dir>
+                            </systemPropertyVariables>
                         </configuration>
                     </plugin>
                 </plugins>
@@ -122,6 +127,11 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
         </dependency>
+        <dependency>
+            <groupId>mbenson.pmw</groupId>
+            <artifactId>privileged-method-weaver-api</artifactId>
+        </dependency>
+     <!-- Test dependencies -->
         <!-- optional dependencies -->
         <dependency>
             <groupId>org.apache.bval</groupId>
@@ -209,6 +219,20 @@
                         <include>**/*TestCase.java</include>
                     </includes>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>mbenson.pmw</groupId>
+                <artifactId>privileged-method-weaver-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>prepare</goal>
+                            <goal>weave</goal>
+                            <goal>test-prepare</goal>
+                            <goal>test-weave</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

@@ -18,11 +18,8 @@
  */
 package org.apache.bval.jsr303.xml;
 
-
 import org.apache.bval.jsr303.ConfigurationImpl;
 import org.apache.bval.jsr303.util.IOUtils;
-import org.apache.bval.jsr303.util.SecureActions;
-import org.apache.bval.util.PrivilegedActions;
 import org.xml.sax.SAXException;
 
 import javax.validation.ConstraintValidatorFactory;
@@ -41,11 +38,11 @@ import javax.xml.validation.SchemaFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.Enumeration;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import mbenson.privileged.Privileged;
 
 /**
  * Description: uses jaxb to parse validation.xml<br/>
@@ -83,6 +80,7 @@ public class ValidationParser {
         }
     }
 
+    @Privileged
     private ValidationConfigType parseXmlConfig() {
         InputStream inputStream = null;
         try {
@@ -112,7 +110,10 @@ public class ValidationParser {
     }
 
     protected InputStream getInputStream(String path) throws IOException {
-        ClassLoader loader = PrivilegedActions.getClassLoader(getClass());
+        ClassLoader loader = contextClassLoader();
+        if (loader == null) {
+            loader = getClass().getClassLoader();
+        }
         InputStream inputStream = loader.getResourceAsStream(path);
 
         if (inputStream != null) {
@@ -143,7 +144,10 @@ public class ValidationParser {
      * @return {@link Schema}
      */
     static Schema getSchema(String xsd) {
-        ClassLoader loader = PrivilegedActions.getClassLoader(ValidationParser.class);
+        ClassLoader loader = contextClassLoader();
+        if (loader == null) {
+            loader = classLoaderFor(ValidationParser.class);
+        }
         SchemaFactory sf = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
         URL schemaUrl = loader.getResource(xsd);
         try {
@@ -211,16 +215,13 @@ public class ValidationParser {
         }
     }
 
+    @Privileged
     private <T> T newInstance(final Class<T> cls) {
-        return AccessController.doPrivileged(new PrivilegedAction<T>() {
-            public T run() {
-                try {
-                    return cls.newInstance();
-                } catch (final Exception ex) {
-                    throw new ValidationException("Cannot instantiate : " + cls, ex);
-                }
-            }
-        });
+        try {
+            return cls.newInstance();
+        } catch (final Exception ex) {
+            throw new ValidationException("Cannot instantiate : " + cls, ex);
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -262,20 +263,11 @@ public class ValidationParser {
         }
     }
 
-
-    private static <T> T doPrivileged(final PrivilegedAction<T> action) {
-        if (System.getSecurityManager() != null) {
-            return AccessController.doPrivileged(action);
-        } else {
-            return action.run();
-        }
-    }
-
     private Class<?> loadClass(final String className) {
-        ClassLoader loader = doPrivileged(SecureActions.getContextClassLoader());
-        if (loader == null)
+        ClassLoader loader = contextClassLoader();
+        if (loader == null) {
             loader = getClass().getClassLoader();
-
+        }
         try {
             return Class.forName(className, true, loader);
         } catch (ClassNotFoundException ex) {
@@ -283,4 +275,17 @@ public class ValidationParser {
         }
     }
 
+    @Privileged
+    private static ClassLoader contextClassLoader() {
+        try {
+            return Thread.currentThread().getContextClassLoader();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    @Privileged
+    private static ClassLoader classLoaderFor(Class<?> type) {
+        return type.getClassLoader();
+    }
 }

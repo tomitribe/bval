@@ -20,8 +20,6 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.Locale;
 import java.util.Map;
 
@@ -30,8 +28,9 @@ import javax.validation.ConstraintDefinitionException;
 import javax.validation.Payload;
 import javax.validation.ValidationException;
 
-import org.apache.bval.jsr303.util.SecureActions;
 import org.apache.commons.lang3.reflect.TypeUtils;
+
+import mbenson.privileged.Privileged;
 
 /**
  * Defines the well-known attributes of {@link Constraint} annotations.
@@ -183,14 +182,6 @@ public enum ConstraintAnnotationAttributes {
         return result;
     }
 
-    private static <T> T doPrivileged(final PrivilegedAction<T> action) {
-        if (System.getSecurityManager() != null) {
-            return AccessController.doPrivileged(action);
-        } else {
-            return action.run();
-        }
-    }
-
     private class Worker<C> {
         final Method method;
         final Object defaultValue;
@@ -214,7 +205,7 @@ public enum ConstraintAnnotationAttributes {
             boolean _valid = true;
             Object _defaultValue = null;
             try {
-                method = doPrivileged(SecureActions.getPublicMethod(constraintType, getAttributeName()));
+                method = getPublicMethod(constraintType, getAttributeName());
                 if (method == null) {
                     if (quiet) {
                         _valid = false;
@@ -251,18 +242,28 @@ public enum ConstraintAnnotationAttributes {
         }
 
         <T> T read(final C constraint) {
-            @SuppressWarnings("unchecked")
-            T result = (T) doPrivileged(new PrivilegedAction<Object>() {
-                public Object run() {
-                    try {
-                        method.setAccessible(true);
-                        return method.invoke(constraint);
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
+            try {
+                @SuppressWarnings("unchecked")
+                final T result = (T) method.invoke(constraint);
+                return result;
+            } catch (RuntimeException e) {
+                throw e;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Privileged
+        private Method getPublicMethod(Class<?> type, String name, Class<?>... argTypes) {
+            try {
+                Method result = type.getMethod(name, argTypes);
+                if (!result.isAccessible()) {
+                    result.setAccessible(true);
                 }
-            });
-            return result;
+                return result;
+            } catch (NoSuchMethodException e) {
+                return null;
+            }
         }
     }
 }

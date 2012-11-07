@@ -19,11 +19,10 @@
 package org.apache.bval.jsr303;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -38,13 +37,14 @@ import javax.validation.groups.Default;
 import org.apache.bval.MetaBeanFactory;
 import org.apache.bval.jsr303.groups.Group;
 import org.apache.bval.jsr303.util.ClassHelper;
-import org.apache.bval.jsr303.util.SecureActions;
 import org.apache.bval.jsr303.xml.MetaConstraint;
 import org.apache.bval.model.MetaBean;
 import org.apache.bval.model.MetaProperty;
 import org.apache.bval.util.AccessStrategy;
 import org.apache.bval.util.FieldAccess;
 import org.apache.bval.util.MethodAccess;
+
+import mbenson.privileged.Privileged;
 
 /**
  * Description: process the class annotations for JSR303 constraint validations to build the MetaBean with information
@@ -120,8 +120,7 @@ public class Jsr303MetaBeanFactory implements MetaBeanFactory {
                 metabean));
         }
 
-        final Field[] fields = doPrivileged(SecureActions.getDeclaredFields(beanClass));
-        for (Field field : fields) {
+        for (Field field : getDeclaredFields(beanClass)) {
             MetaProperty metaProperty = metabean.getProperty(field.getName());
             // create a property for those fields for which there is not yet a
             // MetaProperty
@@ -137,8 +136,7 @@ public class Jsr303MetaBeanFactory implements MetaBeanFactory {
                 }
             }
         }
-        final Method[] methods = doPrivileged(SecureActions.getDeclaredMethods(beanClass));
-        for (Method method : methods) {
+        for (Method method : getDeclaredMethods(beanClass)) {
             String propName = null;
             if (method.getParameterTypes().length == 0) {
                 propName = MethodAccess.getPropertyName(method);
@@ -296,22 +294,21 @@ public class Jsr303MetaBeanFactory implements MetaBeanFactory {
         return result;
     }
 
-
-
-
-    /**
-     * Perform action with AccessController.doPrivileged() if a security manager is installed.
-     *
-     * @param action
-     *  the action to run
-     * @return
-     *  result of the action
-     */
-    private static <T> T doPrivileged(final PrivilegedAction<T> action) {
-        if (System.getSecurityManager() != null) {
-            return AccessController.doPrivileged(action);
-        } else {
-            return action.run();
+    @Privileged
+    private static Field[] getDeclaredFields(Class<?> type) {
+        final Field[] result = type.getDeclaredFields();
+        if (result.length > 0) {
+            AccessibleObject.setAccessible(result, true);
         }
+        return result;
+    }
+
+    @Privileged
+    private static Method[] getDeclaredMethods(Class<?> type) {
+        final Method[] result = type.getDeclaredMethods();
+        if (result.length > 0) {
+            AccessibleObject.setAccessible(result, true);
+        }
+        return result;
     }
 }

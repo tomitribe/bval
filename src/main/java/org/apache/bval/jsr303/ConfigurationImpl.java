@@ -20,7 +20,6 @@ package org.apache.bval.jsr303;
 
 
 import org.apache.bval.jsr303.resolver.DefaultTraversableResolver;
-import org.apache.bval.jsr303.util.SecureActions;
 import org.apache.bval.jsr303.xml.ValidationParser;
 
 import javax.validation.*;
@@ -28,10 +27,10 @@ import javax.validation.spi.BootstrapState;
 import javax.validation.spi.ConfigurationState;
 import javax.validation.spi.ValidationProvider;
 import java.io.InputStream;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.*;
 import java.util.logging.Logger;
+
+import mbenson.privileged.Privileged;
 
 /**
  * Description: used to configure apache-validation for jsr303.
@@ -241,20 +240,22 @@ public class ConfigurationImpl implements ApacheValidatorConfiguration, Configur
      * @throws ValidationException if the ValidatorFactory cannot be built
      */
     public ValidatorFactory buildValidatorFactory() {
-        return run(SecureActions.doPrivBuildValidatorFactory(this));
+        return doPrivBuildValidatorFactory();
     }
 
-    public ValidatorFactory doPrivBuildValidatorFactory() {
+    @Privileged
+    private ValidatorFactory doPrivBuildValidatorFactory() {
         prepare();
-        if (provider != null) {
-            return provider.buildValidatorFactory(this);
-        } else {
+        if (provider == null) {
             return findProvider().buildValidatorFactory(this);
         }
+        return provider.buildValidatorFactory(this);
     }
 
     private void prepare() {
-        if (prepared) return;
+        if (prepared) {
+            return;
+        }
         parseValidationXml();
         applyDefaults();
         prepared = true;
@@ -330,11 +331,4 @@ public class ConfigurationImpl implements ApacheValidatorConfiguration, Configur
         this.providerClass = providerClass;
     }
 
-    private static <T> T run(PrivilegedAction<T> action) {
-        if (System.getSecurityManager() != null) {
-            return AccessController.doPrivileged(action);
-        } else {
-            return action.run();
-        }
-    }
 }

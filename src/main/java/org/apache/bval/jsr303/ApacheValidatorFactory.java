@@ -20,8 +20,6 @@ package org.apache.bval.jsr303;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Modifier;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -43,6 +41,8 @@ import org.apache.bval.jsr303.xml.ValidationMappingParser;
 import org.apache.bval.util.AccessStrategy;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.ClassUtils;
+
+import mbenson.privileged.Privileged;
 
 /**
  * Description: a factory is a complete configurated object that can create
@@ -251,16 +251,13 @@ public class ApacheValidatorFactory implements ValidatorFactory, Cloneable {
         throw new ValidationException("Type " + type + " not supported");
     }
 
+    @Privileged
     private <T> T newInstance(final Class<T> cls) {
-        return AccessController.doPrivileged(new PrivilegedAction<T>() {
-            public T run() {
-                try {
-                    return cls.newInstance();
-                } catch (final Exception ex) {
-                    throw new ValidationException("Cannot instantiate : " + cls, ex);
-                }
-            }
-        });
+        try {
+            return cls.newInstance();
+        } catch (final Exception ex) {
+            throw new ValidationException("Cannot instantiate : " + cls, ex);
+        }
     }
 
     /**
