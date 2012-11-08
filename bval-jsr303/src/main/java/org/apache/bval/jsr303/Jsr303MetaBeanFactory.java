@@ -44,7 +44,7 @@ import org.apache.bval.util.AccessStrategy;
 import org.apache.bval.util.FieldAccess;
 import org.apache.bval.util.MethodAccess;
 
-import mbenson.privileged.Privileged;
+import com.github.mbenson.privileged.Privileged;
 
 /**
  * Description: process the class annotations for JSR303 constraint validations to build the MetaBean with information

@@ -42,7 +42,7 @@ import org.apache.bval.util.AccessStrategy;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.ClassUtils;
 
-import mbenson.privileged.Privileged;
+import com.github.mbenson.privileged.Privileged;
 
 /**
  * Description: a factory is a complete configurated object that can create

@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeMap;
 
-import mbenson.privileged.Privileged;
+import com.github.mbenson.privileged.Privileged;
 
 /**
  * Description: <br/>

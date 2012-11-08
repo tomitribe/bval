@@ -30,7 +30,7 @@ import javax.validation.ValidationException;
 
 import org.apache.commons.lang3.reflect.TypeUtils;
 
-import mbenson.privileged.Privileged;
+import com.github.mbenson.privileged.Privileged;
 
 /**
  * Defines the well-known attributes of {@link Constraint} annotations.

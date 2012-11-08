@@ -27,7 +27,7 @@ import javax.validation.spi.ValidationProvider;
 
 import org.apache.commons.lang3.ClassUtils;
 
-import mbenson.privileged.Privileged;
+import com.github.mbenson.privileged.Privileged;
 
 /**
  * Description: Implementation of {@link ValidationProvider} for jsr303

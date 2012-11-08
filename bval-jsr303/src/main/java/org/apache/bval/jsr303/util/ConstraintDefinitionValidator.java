@@ -27,7 +27,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.Locale;
 
-import mbenson.privileged.Privileged;
+import com.github.mbenson.privileged.Privileged;
 
 /**
  * Internal validator that ensures the correct definition of constraint

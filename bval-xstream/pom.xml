@@ -47,7 +47,7 @@
       <artifactId>xstream</artifactId>
     </dependency>
     <dependency>
-      <groupId>mbenson.pmw</groupId>
+      <groupId>com.github.mbenson.privileged-method-weaver</groupId>
       <artifactId>privileged-method-weaver-api</artifactId>
     </dependency>
     <!-- Test dependencies -->
@@ -61,7 +61,7 @@
   <build>
     <plugins>
       <plugin>
-        <groupId>mbenson.pmw</groupId>
+        <groupId>com.github.mbenson.privileged-method-weaver</groupId>
         <artifactId>privileged-method-weaver-maven-plugin</artifactId>
         <executions>
           <execution>

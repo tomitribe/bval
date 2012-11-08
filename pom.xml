@@ -323,7 +323,7 @@
                 <version>1.3.1</version>
             </dependency>
             <dependency>
-                <groupId>mbenson.pmw</groupId>
+                <groupId>com.github.mbenson.privileged-method-weaver</groupId>
                 <artifactId>privileged-method-weaver-api</artifactId>
                 <version>${privilegedMethodWeaver.version}</version>
                 <scope>provided</scope>
@@ -549,7 +549,7 @@
                   <version>2.1.1</version>
                 </plugin>
                 <plugin>
-                  <groupId>mbenson.pmw</groupId>
+                  <groupId>com.github.mbenson.privileged-method-weaver</groupId>
                   <artifactId>privileged-method-weaver-maven-plugin</artifactId>
                   <version>${privilegedMethodWeaver.version}</version>
                 </plugin>

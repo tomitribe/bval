@@ -30,7 +30,7 @@ import javax.validation.MessageInterpolator;
 
 import org.apache.commons.lang3.ArrayUtils;
 
-import mbenson.privileged.Privileged;
+import com.github.mbenson.privileged.Privileged;
 
 /**
  * Description: Resource bundle backed message interpolator.

@@ -29,7 +29,7 @@ import javax.validation.ValidationException;
 
 import org.apache.bval.jsr303.ConstraintAnnotationAttributes;
 
-import mbenson.privileged.Privileged;
+import com.github.mbenson.privileged.Privileged;
 
 /**
  * Description: Holds the information and creates an annotation proxy during xml
