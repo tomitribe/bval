@@ -52,7 +52,7 @@ import org.apache.commons.beanutils.ConvertUtils;
 import org.apache.commons.beanutils.Converter;
 import org.apache.commons.lang3.StringUtils;
 
-import com.github.mbenson.privileged.Privileged;
+import org.apache.commons.privilizer.Privileged;
 
 /**
  * Uses JAXB to parse constraints.xml based on validation-mapping-1.0.xsd.<br>

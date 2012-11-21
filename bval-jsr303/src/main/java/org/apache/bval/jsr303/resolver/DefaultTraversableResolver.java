@@ -25,7 +25,7 @@ import javax.validation.TraversableResolver;
 
 import org.apache.bval.jsr303.util.ClassHelper;
 
-import com.github.mbenson.privileged.Privileged;
+import org.apache.commons.privilizer.Privileged;
 
 /** @see javax.validation.TraversableResolver */
 public class DefaultTraversableResolver implements TraversableResolver, CachingRelevant {

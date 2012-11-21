@@ -42,7 +42,7 @@ import java.util.Enumeration;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.github.mbenson.privileged.Privileged;
+import org.apache.commons.privilizer.Privileged;
 
 /**
  * Description: uses jaxb to parse validation.xml<br/>

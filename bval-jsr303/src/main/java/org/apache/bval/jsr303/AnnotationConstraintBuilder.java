@@ -43,7 +43,7 @@ import org.apache.bval.jsr303.groups.GroupsComputer;
 import org.apache.bval.jsr303.xml.AnnotationProxyBuilder;
 import org.apache.bval.util.AccessStrategy;
 
-import com.github.mbenson.privileged.Privileged;
+import org.apache.commons.privilizer.Privileged;
 
 /**
  * Description: helper class that builds a {@link ConstraintValidation} or its

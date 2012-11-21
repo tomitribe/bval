@@ -24,7 +24,7 @@ import org.apache.bval.model.MetaProperty;
 
 import java.util.Map;
 
-import com.github.mbenson.privileged.Privileged;
+import org.apache.commons.privilizer.Privileged;
 
 /**
  * Description: internal implementation class to construct metabeans with

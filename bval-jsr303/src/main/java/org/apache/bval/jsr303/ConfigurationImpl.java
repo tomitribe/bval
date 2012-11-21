@@ -30,7 +30,7 @@ import java.io.InputStream;
 import java.util.*;
 import java.util.logging.Logger;
 
-import com.github.mbenson.privileged.Privileged;
+import org.apache.commons.privilizer.Privileged;
 
 /**
  * Description: used to configure apache-validation for jsr303.

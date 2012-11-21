@@ -39,7 +39,7 @@
 
     <properties>
         <site.deploy.url>scp://people.apache.org/home/${user.name}/public_html/bval/${project.version}/staging-site</site.deploy.url>
-        <privilegedMethodWeaver.version>0.1-SNAPSHOT</privilegedMethodWeaver.version>
+        <privilizer.version>1.0-SNAPSHOT</privilizer.version>
     </properties>
 
     <inceptionYear>2010</inceptionYear>
@@ -323,9 +323,9 @@
                 <version>1.3.1</version>
             </dependency>
             <dependency>
-                <groupId>com.github.mbenson.privileged-method-weaver</groupId>
-                <artifactId>privileged-method-weaver-api</artifactId>
-                <version>${privilegedMethodWeaver.version}</version>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-privilizer-api</artifactId>
+                <version>${privilizer.version}</version>
                 <scope>provided</scope>
             </dependency>
             <!-- Optional - only used by bval-json -->
@@ -549,9 +549,9 @@
                   <version>2.1.1</version>
                 </plugin>
                 <plugin>
-                  <groupId>com.github.mbenson.privileged-method-weaver</groupId>
-                  <artifactId>privileged-method-weaver-maven-plugin</artifactId>
-                  <version>${privilegedMethodWeaver.version}</version>
+                  <groupId>org.apache.commons</groupId>
+                  <artifactId>commons-privilizer-maven-plugin</artifactId>
+                  <version>${privilizer.version}</version>
                 </plugin>
             </plugins>
         </pluginManagement>

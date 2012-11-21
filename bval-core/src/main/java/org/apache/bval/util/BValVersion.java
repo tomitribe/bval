@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.util.Properties;
 import java.util.StringTokenizer;
 
-import com.github.mbenson.privileged.Privileged;
+import org.apache.commons.privilizer.Privileged;
 
 /**
  * This class contains version information for BVal.

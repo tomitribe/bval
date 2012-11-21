@@ -47,8 +47,8 @@
       <artifactId>xstream</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.github.mbenson.privileged-method-weaver</groupId>
-      <artifactId>privileged-method-weaver-api</artifactId>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-privilizer-api</artifactId>
     </dependency>
     <!-- Test dependencies -->
     <dependency>
@@ -61,8 +61,8 @@
   <build>
     <plugins>
       <plugin>
-        <groupId>com.github.mbenson.privileged-method-weaver</groupId>
-        <artifactId>privileged-method-weaver-maven-plugin</artifactId>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-privilizer-maven-plugin</artifactId>
         <executions>
           <execution>
             <goals>

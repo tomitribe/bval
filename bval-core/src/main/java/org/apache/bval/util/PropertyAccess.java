@@ -26,7 +26,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.Map;
 
-import com.github.mbenson.privileged.Privileged;
+import org.apache.commons.privilizer.Privileged;
 
 /**
  * Description: Undefined dynamic strategy (FIELD or METHOD access) Uses PropertyUtils or tries to determine field to

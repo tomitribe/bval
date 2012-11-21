@@ -40,7 +40,7 @@ import org.apache.bval.xml.XMLMetaBeanManager;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.reflect.ConstructorUtils;
 
-import com.github.mbenson.privileged.Privileged;
+import org.apache.commons.privilizer.Privileged;
 
 /**
  * Description: Represents the context that is used to create
