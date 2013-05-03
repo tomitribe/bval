@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <!--
  Licensed to the Apache Software Foundation (ASF) under one
  or more contributor license agreements.  See the NOTICE file
@@ -33,7 +32,7 @@
     <artifactId>bval-parent</artifactId>
     <name>Apache BVal :: bval-parent (Parent POM)</name>
     <packaging>pom</packaging>
-    <version>0.4-incubating-SNAPSHOT</version>
+    <version>0.4.1-incubating-SNAPSHOT</version>
 
     <description>Apache BVal parent pom</description>
 
@@ -46,9 +45,9 @@
     <url>http://incubator.apache.org/bval/</url>
 
     <scm>
-        <connection>scm:svn:http://svn.apache.org/repos/asf/incubator/bval/trunk</connection>
-        <developerConnection>scm:svn:https://svn.apache.org/repos/asf/incubator/bval/trunk</developerConnection>
-        <url>http://svn.apache.org/repos/asf/incubator/bval/trunk</url>
+        <connection>scm:svn:http://svn.apache.org/repos/asf/bval/branches/0.4.x-incubating</connection>
+        <developerConnection>scm:svn:https://svn.apache.org/repos/asf/bval/branches/0.4.x-incubating</developerConnection>
+        <url>http://svn.apache.org/repos/asf/bval/branches/0.4.x-incubating</url>
     </scm>
 
     <mailingLists>
@@ -215,6 +214,15 @@
             <organization>Sourcesense Srl</organization>
             <roles>
                 <role>PPMC Member</role>
+                <role>Committer</role>
+            </roles>
+        </developer>
+        <developer>
+            <id>allee8285</id>
+            <name>Albert Lee</name>
+            <email>allee8285@apache.org</email>
+            <organization>IBM</organization>
+            <roles>
                 <role>Committer</role>
             </roles>
         </developer>
