@@ -145,10 +145,10 @@ public abstract class FeaturesCapable implements Serializable {
      * @param target
      */
     protected <T extends FeaturesCapable> void copyInto(T target) {
-        target.features = target.createFeaturesMap();
-        target.features.putAll(features);
+        ((FeaturesCapable)target).features = target.createFeaturesMap();
+        ((FeaturesCapable)target).features.putAll(features);
         if (validations != null) {
-            target.validations = validations.clone();
+            ((FeaturesCapable)target).validations = validations.clone();
         }
     }
 
