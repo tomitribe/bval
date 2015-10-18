@@ -25,6 +25,7 @@ import javax.validation.ConstraintValidatorFactory;
 import javax.validation.ValidationException;
 import java.io.Closeable;
 import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.util.Collection;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -82,6 +83,11 @@ public class DefaultConstraintValidatorFactory implements ConstraintValidatorFac
 
     public void releaseInstance(final ConstraintValidator<?, ?> instance) {
         // no-op
+    }
+
+    @Override
+    public <A extends Annotation> void registerInstance(Class<A> clazz, ConstraintValidator<?, ?> instance) {
+
     }
 
     public void close() throws IOException {

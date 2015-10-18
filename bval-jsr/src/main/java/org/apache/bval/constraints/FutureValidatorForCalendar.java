@@ -28,10 +28,7 @@ import java.util.Calendar;
  */
 public class FutureValidatorForCalendar implements ConstraintValidator<Future, Calendar> {
 
-    public void initialize(Future annotation) {
-    }
-
-    public boolean isValid(Calendar cal, ConstraintValidatorContext context) {
+    public boolean isValid(Calendar cal) {
         return cal == null || cal.after(now());
     }
 

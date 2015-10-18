@@ -24,6 +24,7 @@ import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
+import java.lang.annotation.Annotation;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
@@ -65,6 +66,11 @@ public class CustomConstraintValidatorFactoryTest extends TestCase {
             public void releaseInstance(ConstraintValidator<?, ?> instance) {
                 // no-op
             }
+
+            @Override
+            public <A extends Annotation> void registerInstance(Class<A> clazz, ConstraintValidator<?, ?> instance) {
+
+            }
         };
 
         // Create a validator with this factory
@@ -95,11 +101,7 @@ public class CustomConstraintValidatorFactoryTest extends TestCase {
 
         public static class GoodPersonValidator implements ConstraintValidator<GoodPerson, Person> {
             // @Override - not allowed in 1.5 for Interface methods
-            public void initialize(GoodPerson constraintAnnotation) {
-            }
-
-            // @Override - not allowed in 1.5 for Interface methods
-            public boolean isValid(Person value, ConstraintValidatorContext context) {
+            public boolean isValid(Person value) {
                 return true;
             }
         }

@@ -22,8 +22,15 @@ import java.lang.annotation.Annotation;
  * @version $Rev$ $Date$
  */
 public interface ConstraintValidator<A extends Annotation, T> {
-    void initialize(A constraintAnnotation);
 
-    boolean isValid(T value, ConstraintValidatorContext context);
+    default void initialize(A constraintAnnotation) {
+    }
+
+    default boolean isValid(T value, ConstraintValidatorContext context) {
+        return isValid(value);
+    }
+
+    boolean isValid(T value);
+
 }
 

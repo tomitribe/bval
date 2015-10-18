@@ -28,10 +28,7 @@ import java.util.Date;
  */
 public class PastValidatorForDate implements ConstraintValidator<Past, Date> {
 
-    public void initialize(Past annotation) {
-    }
-
-    public boolean isValid(Date date, ConstraintValidatorContext context) {
+    public boolean isValid(Date date) {
         return date == null || date.before(now());
     }
 

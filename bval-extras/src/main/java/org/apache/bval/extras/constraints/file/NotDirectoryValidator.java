@@ -31,15 +31,8 @@ public class NotDirectoryValidator implements ConstraintValidator<NotDirectory, 
     /**
      * {@inheritDoc}
      */
-    public boolean isValid(File value, ConstraintValidatorContext context) {
+    public boolean isValid(File value) {
         return value.exists() && !value.isDirectory();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public void initialize(NotDirectory parameters) {
-        // do nothing (as long as Directory has no properties)
     }
 
 }

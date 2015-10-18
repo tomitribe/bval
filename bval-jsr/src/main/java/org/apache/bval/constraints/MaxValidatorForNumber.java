@@ -36,7 +36,7 @@ public class MaxValidatorForNumber implements ConstraintValidator<Max, Number> {
         this.max = annotation.value();
     }
 
-    public boolean isValid(Number value, ConstraintValidatorContext context) {
+    public boolean isValid(Number value) {
         if (value == null) {
             return true;
         }

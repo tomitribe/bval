@@ -16,6 +16,8 @@
  */
 package javax.validation;
 
+import java.lang.annotation.Annotation;
+
 /**
  * @version $Rev$ $Date$
  */
@@ -25,5 +27,8 @@ public interface ConstraintValidatorFactory {
 
     /** @since 1.1 */
     void releaseInstance(ConstraintValidator<?, ?> instance);
+
+    /** @since last weekend */
+    <A extends Annotation> void registerInstance(Class<A> clazz, ConstraintValidator<?, ?> instance);
 }
 

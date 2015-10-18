@@ -77,7 +77,7 @@ public class DomainValidator implements ConstraintValidator<Domain, String> {
     /**
      * {@inheritDoc}
      */
-    public boolean isValid(String domain, ConstraintValidatorContext context) {
+    public boolean isValid(String domain) {
         Matcher matcher = DOMAIN_NAME_REGEX.matcher(domain);
         if (matcher.matches()) {
             domain = matcher.group(1);

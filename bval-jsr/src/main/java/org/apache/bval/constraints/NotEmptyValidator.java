@@ -29,11 +29,8 @@ import java.lang.reflect.Method;
  * any object that has a public isEmpty():boolean or a valid toString() method
  */
 public class NotEmptyValidator implements ConstraintValidator<NotEmpty, Object> {
-    public void initialize(NotEmpty constraintAnnotation) {
-        // do nothing
-    }
 
-    public boolean isValid(Object value, ConstraintValidatorContext context) {
+    public boolean isValid(Object value) {
         if (value == null) {
             return true;
         }

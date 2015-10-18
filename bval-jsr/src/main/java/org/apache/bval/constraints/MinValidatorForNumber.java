@@ -35,7 +35,7 @@ public class MinValidatorForNumber implements ConstraintValidator<Min, Number> {
         this.minValue = annotation.value();
     }
 
-    public boolean isValid(Number value, ConstraintValidatorContext context) {
+    public boolean isValid(Number value) {
         if (value == null) {
             return true;
         }

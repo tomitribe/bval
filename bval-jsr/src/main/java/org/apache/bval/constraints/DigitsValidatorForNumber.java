@@ -59,7 +59,7 @@ public class DigitsValidatorForNumber implements ConstraintValidator<Digits, Num
         }
     }
 
-    public boolean isValid(Number num, ConstraintValidatorContext context) {
+    public boolean isValid(Number num) {
         if (num == null) {
             return true;
         }

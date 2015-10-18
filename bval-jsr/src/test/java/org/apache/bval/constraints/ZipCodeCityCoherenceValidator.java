@@ -35,6 +35,11 @@ public class ZipCodeCityCoherenceValidator
     public void initialize(ZipCodeCityCoherence constraintAnnotation) {
     }
 
+    @Override
+    public boolean isValid(ZipCodeCityCarrier value) {
+        return false;
+    }
+
     public boolean isValid(ZipCodeCityCarrier adr, ConstraintValidatorContext context) {
         boolean r = true;
         if ("error".equals(adr.getZipCode())) {

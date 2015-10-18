@@ -31,7 +31,7 @@ public class NullValidator implements ConstraintValidator<Null, Object> {
         // do nothing
     }
 
-    public boolean isValid(Object object, ConstraintValidatorContext context) {
+    public boolean isValid(Object object) {
         return object == null;
     }
 }

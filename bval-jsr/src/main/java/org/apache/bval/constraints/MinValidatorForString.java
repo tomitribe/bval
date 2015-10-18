@@ -35,7 +35,7 @@ public class MinValidatorForString implements ConstraintValidator<Min, String> {
         this.minValue = annotation.value();
     }
 
-    public boolean isValid(String value, ConstraintValidatorContext context) {
+    public boolean isValid(String value) {
         if (value == null) {
             return true;
         }

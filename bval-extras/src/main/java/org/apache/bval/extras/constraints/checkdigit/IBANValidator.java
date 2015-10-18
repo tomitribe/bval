@@ -50,7 +50,7 @@ public final class IBANValidator
     /**
      * {@inheritDoc}
      */
-    public boolean isValid(String code, ConstraintValidatorContext context) {
+    public boolean isValid(String code) {
         if (code.length() < 5) {
             return false;
         }

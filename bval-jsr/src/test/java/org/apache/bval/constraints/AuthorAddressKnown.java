@@ -48,17 +48,10 @@ public @interface AuthorAddressKnown {
     Class<? extends Payload>[] payload() default { };
 
     public static class Validator implements ConstraintValidator<AuthorAddressKnown, Author> {
-
         /**
          * {@inheritDoc}
          */
-        public void initialize(AuthorAddressKnown constraintAnnotation) {
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        public boolean isValid(Author value, ConstraintValidatorContext context) {
+        public boolean isValid(Author value) {
             if (value.getAddresses() == null) {
                 return false;
             }

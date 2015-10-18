@@ -37,19 +37,12 @@ public class InetAddressValidator implements ConstraintValidator<InetAddress, St
     /**
      * {@inheritDoc}
      */
-    public boolean isValid(String value, ConstraintValidatorContext context) {
+    public boolean isValid(String value) {
         if (!IPV4_PATTERN.matcher(value).matches()) {
             return false;
         }
 
         return true;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public void initialize(InetAddress parameters) {
-        // do nothing (as long as InetAddress has no properties)
     }
 
 }

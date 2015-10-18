@@ -28,6 +28,7 @@ import javax.validation.ConstraintViolation;
 import javax.validation.Payload;
 import javax.validation.Validation;
 import javax.validation.ValidatorFactory;
+import java.lang.annotation.Annotation;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -72,10 +73,7 @@ public class ContextConstraintValidatorFactoryTest extends TestCase {
 				this.requiredCollaborator = requiredCollaborator;
 			}
 
-			public void initialize(Contrived constraintAnnotation) {
-			}
-
-			public boolean isValid(Object value, ConstraintValidatorContext context) {
+			public boolean isValid(Object value) {
 				getRequiredCollaborator().toString();
 				return true;
 			}
@@ -105,7 +103,12 @@ public class ContextConstraintValidatorFactoryTest extends TestCase {
             public void releaseInstance(ConstraintValidator<?, ?> instance) {
                 // no-op
             }
-        };
+
+			@Override
+			public <A extends Annotation> void registerInstance(Class<A> clazz, ConstraintValidator<?, ?> instance) {
+
+			}
+		};
 		final Set<ConstraintViolation<Example>> violations = factory.usingContext().constraintValidatorFactory(constraintValidatorFactory)
 				.getValidator().validate(new Example());
 		assertTrue(violations.isEmpty());

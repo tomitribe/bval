@@ -35,7 +35,8 @@ public class MaxValidatorForString implements ConstraintValidator<Max, String> {
         this.max = annotation.value();
     }
 
-    public boolean isValid(String value, ConstraintValidatorContext context) {
+    @Override
+    public boolean isValid(String value) {
         if (value == null) {
             return true;
         }

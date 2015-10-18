@@ -34,7 +34,7 @@ public class SizeValidatorForArrayOfLong extends SizeValidator implements Constr
      *         <code>array</code> is between the specified <code>min</code> and <code>max</code> values (inclusive),
      *         <code>false</code> otherwise.
      */
-    public boolean isValid(long[] array, ConstraintValidatorContext context) {
+    public boolean isValid(long[] array) {
         if (array == null) {
             return true;
         }

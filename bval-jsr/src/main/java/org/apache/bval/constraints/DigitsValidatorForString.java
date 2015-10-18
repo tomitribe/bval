@@ -59,7 +59,7 @@ public class DigitsValidatorForString implements ConstraintValidator<Digits, Str
         }
     }
 
-    public boolean isValid(String str, ConstraintValidatorContext context) {
+    public boolean isValid(String str) {
         //null values are valid
         if (str == null) {
             return true;

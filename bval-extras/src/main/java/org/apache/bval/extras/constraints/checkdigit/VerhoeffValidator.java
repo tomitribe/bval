@@ -63,7 +63,7 @@ public final class VerhoeffValidator
     /**
      * {@inheritDoc}
      */
-    public boolean isValid(String code, ConstraintValidatorContext context) {
+    public boolean isValid(String code) {
         if (code.length() == 0) {
             return false;
         }
@@ -78,13 +78,6 @@ public final class VerhoeffValidator
             checksum = D_TABLE[checksum][P_TABLE[i % 8][num]];
         }
         return checksum == 0;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public void initialize(Verhoeff iban) {
-        // not needed
     }
 
 }

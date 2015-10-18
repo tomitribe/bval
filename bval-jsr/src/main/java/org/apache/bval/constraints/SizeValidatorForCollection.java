@@ -30,12 +30,11 @@ public class SizeValidatorForCollection extends SizeValidator implements Constra
      * Checks the number of entries in a map.
      *
      * @param collection The collection to validate.
-     * @param context    context in which the constraint is evaluated.
      * @return Returns <code>true</code> if the collection is <code>null</code> or the number of entries in
      *         <code>collection</code> is between the specified <code>min</code> and <code>max</code> values (inclusive),
      *         <code>false</code> otherwise.
      */
-    public boolean isValid(Collection<?> collection, ConstraintValidatorContext context) {
+    public boolean isValid(Collection<?> collection) {
         if (collection == null) {
             return true;
         }

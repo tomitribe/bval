@@ -57,7 +57,7 @@ abstract class ModulusValidator<A extends Annotation>
     /**
      * {@inheritDoc}
      */
-    public boolean isValid(String code, ConstraintValidatorContext context) {
+    public boolean isValid(String code) {
         if (code.length() == 0) {
             return false;
         }

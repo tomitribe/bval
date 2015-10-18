@@ -26,11 +26,8 @@ import java.util.Map;
  * Description: <br/>
  */
 public class NotEmptyValidatorForMap implements ConstraintValidator<NotEmpty, Map<?, ?>> {
-    public void initialize(NotEmpty constraintAnnotation) {
-        // do nothing
-    }
 
-    public boolean isValid(Map<?, ?> value, ConstraintValidatorContext context) {
+    public boolean isValid(Map<?, ?> value) {
         return value == null || !value.isEmpty();
     }
 }

@@ -29,12 +29,11 @@ public class SizeValidatorForArrayOfObject extends SizeValidator implements Cons
      * Checks the number of entries in an array.
      *
      * @param array   The array to validate.
-     * @param context context in which the constraint is evaluated.
      * @return Returns <code>true</code> if the array is <code>null</code> or the number of entries in
      *         <code>array</code> is between the specified <code>min</code> and <code>max</code> values (inclusive),
      *         <code>false</code> otherwise.
      */
-    public boolean isValid(Object[] array, ConstraintValidatorContext context) {
+    public boolean isValid(Object[] array) {
         if (array == null) {
             return true;
         }

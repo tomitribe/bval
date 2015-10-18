@@ -35,6 +35,7 @@ import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
 import javax.validation.bootstrap.ProviderSpecificBootstrap;
 import javax.validation.spi.ValidationProvider;
+import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -110,6 +111,11 @@ public class BootstrapTest extends TestCase {
 
             public void releaseInstance(ConstraintValidator<?, ?> instance) {
                 // no-op
+            }
+
+            @Override
+            public <A extends Annotation> void registerInstance(Class<A> clazz, ConstraintValidator<?, ?> instance) {
+
             }
         });
         factory = builder.buildValidatorFactory();

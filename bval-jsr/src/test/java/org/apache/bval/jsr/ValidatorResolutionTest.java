@@ -107,11 +107,8 @@ public class ValidatorResolutionTest extends TestCase {
     }
 
     public static class InvalidPersonNameValidator implements ConstraintValidator<NotNull, String> {
-        public void initialize(NotNull constraintAnnotation) {
-            // Nothing
-        }
 
-        public boolean isValid(String value, ConstraintValidatorContext context) {
+        public boolean isValid(String value) {
             return true;
         }
     }

@@ -29,12 +29,11 @@ public class SizeValidatorForMap extends SizeValidator implements ConstraintVali
      * Checks the number of entries in a map.
      *
      * @param map     The map to validate.
-     * @param context context in which the constraint is evaluated.
      * @return Returns <code>true</code> if the map is <code>null</code> or the number of entries in <code>map</code>
      *         is between the specified <code>min</code> and <code>max</code> values (inclusive),
      *         <code>false</code> otherwise.
      */
-    public boolean isValid(Map<?, ?> map, ConstraintValidatorContext context) {
+    public boolean isValid(Map<?, ?> map) {
         if (map == null) {
             return true;
         }

@@ -40,7 +40,7 @@ public class DecimalMinValidatorForString implements ConstraintValidator<Decimal
         }
     }
 
-    public boolean isValid(String value, ConstraintValidatorContext context) {
+    public boolean isValid(String value) {
         //null values are valid
         if (value == null) {
             return true;

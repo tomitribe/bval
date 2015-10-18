@@ -27,10 +27,7 @@ import javax.validation.constraints.AssertFalse;
  */
 public class AssertFalseValidator implements ConstraintValidator<AssertFalse, Boolean> {
 
-    public void initialize(AssertFalse annotation) {
-    }
-
-    public boolean isValid(Boolean value, ConstraintValidatorContext context) {
+    public boolean isValid(Boolean value) {
         return value == null || Boolean.FALSE.equals(value);
     }
 

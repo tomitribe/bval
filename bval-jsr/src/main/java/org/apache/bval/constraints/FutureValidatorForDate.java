@@ -28,10 +28,7 @@ import java.util.Date;
  */
 public class FutureValidatorForDate implements ConstraintValidator<Future, Date> {
 
-    public void initialize(Future annotation) {
-    }
-
-    public boolean isValid(Date date, ConstraintValidatorContext context) {
+    public boolean isValid(Date date) {
         return date == null || date.after(now());
     }
 

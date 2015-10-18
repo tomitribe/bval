@@ -37,7 +37,7 @@ public class DecimalMaxValidatorForNumber implements ConstraintValidator<Decimal
         }
     }
 
-    public boolean isValid(Number value, ConstraintValidatorContext context) {
+    public boolean isValid(Number value) {
         if (value == null) {
             return true;
         }

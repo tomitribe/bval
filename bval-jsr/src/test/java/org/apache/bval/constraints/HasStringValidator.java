@@ -33,7 +33,7 @@ public class HasStringValidator implements ConstraintValidator<HasValue, String>
         values = stringValues.value();
     }
 
-    public boolean isValid(String s, ConstraintValidatorContext constraintValidatorContext) {
+    public boolean isValid(String s) {
         return s == null || ArrayUtils.contains(values, s);
     }
 }

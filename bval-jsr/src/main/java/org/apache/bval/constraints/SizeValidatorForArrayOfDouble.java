@@ -34,7 +34,7 @@ public class SizeValidatorForArrayOfDouble extends SizeValidator implements Cons
      *         <code>array</code> is between the specified <code>min</code> and <code>max</code> values (inclusive),
      *         <code>false</code> otherwise.
      */
-    public boolean isValid(double[] array, ConstraintValidatorContext context) {
+    public boolean isValid(double[] array) {
         if (array == null) {
             return true;
         }
