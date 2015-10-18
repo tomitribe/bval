@@ -25,7 +25,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.apache.bval</groupId>
+        <groupId>org.tomitribe.prototype.bval</groupId>
         <artifactId>bval-parent</artifactId>
         <version>1.1.1-SNAPSHOT</version>
     </parent>
@@ -38,12 +38,12 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.apache.bval</groupId>
+            <groupId>org.tomitribe.prototype.bval</groupId>
             <artifactId>bval-core</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.bval</groupId>
+            <groupId>org.tomitribe.prototype.bval</groupId>
             <artifactId>bval-jsr</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -68,8 +68,8 @@
             </activation>
             <dependencies>
                 <dependency>
-                    <groupId>org.apache.geronimo.specs</groupId>
-                    <artifactId>geronimo-validation_1.1_spec</artifactId>
+                    <groupId>org.tomitribe.prototype.bval</groupId>
+                    <artifactId>javaee-api</artifactId>
                     <scope>provided</scope>
                 </dependency>
             </dependencies>
@@ -87,8 +87,8 @@
             </activation>
             <dependencies>
                 <dependency>
-                    <groupId>javax.validation</groupId>
-                    <artifactId>validation-api</artifactId>
+                    <groupId>org.tomitribe.prototype.bval</groupId>
+                    <artifactId>javaee-api</artifactId>
                     <!-- allow users to choose an API provider -->
                     <scope>provided</scope>
                 </dependency>

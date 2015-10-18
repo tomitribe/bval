@@ -22,7 +22,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.apache.bval</groupId>
+        <groupId>org.tomitribe.prototype.bval</groupId>
         <artifactId>bval-parent</artifactId>
         <version>1.1.1-SNAPSHOT</version>
     </parent>
@@ -47,8 +47,8 @@
             </activation>
             <dependencies>
                 <dependency>
-                    <groupId>org.apache.geronimo.specs</groupId>
-                    <artifactId>geronimo-validation_1.1_spec</artifactId>
+                    <groupId>org.tomitribe.prototype.bval</groupId>
+                    <artifactId>javaee-api</artifactId>
                     <scope>provided</scope>
                 </dependency>
             </dependencies>
@@ -66,8 +66,8 @@
             </activation>
             <dependencies>
                 <dependency>
-                    <groupId>javax.validation</groupId>
-                    <artifactId>validation-api</artifactId>
+                    <groupId>org.tomitribe.prototype.bval</groupId>
+                    <artifactId>javaee-api</artifactId>
                     <!-- allow users to choose an API provider -->
                     <scope>provided</scope>
                 </dependency>
@@ -155,7 +155,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.apache.bval</groupId>
+            <groupId>org.tomitribe.prototype.bval</groupId>
             <artifactId>bval-core</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -169,7 +169,7 @@
         </dependency>
         <!-- optional dependencies -->
         <dependency>
-            <groupId>org.apache.bval</groupId>
+            <groupId>org.tomitribe.prototype.bval</groupId>
             <artifactId>bval-xstream</artifactId>
             <version>${project.version}</version>
             <!-- don't pull into OSGi bundle -->
@@ -177,9 +177,17 @@
             <optional>true</optional>
         </dependency>
         <dependency>
+            <groupId>org.tomitribe.prototype.bval</groupId>
+            <artifactId>javaee-api</artifactId>
+            <!-- allow users to choose an API provider -->
+            <scope>provided</scope>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
             <groupId>org.apache.geronimo.specs</groupId>
             <artifactId>geronimo-jpa_2.0_spec</artifactId>
             <!-- allow users to choose an API provider -->
+            <version>1.1</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
@@ -191,28 +199,30 @@
             <optional>true</optional>
         </dependency>
         <dependency>
-            <groupId>org.apache.tomcat</groupId>
-            <artifactId>tomcat-el-api</artifactId>
+            <groupId>org.apache.geronimo.specs</groupId>
+            <artifactId>geronimo-annotation_1.2_spec</artifactId>
+            <scope>provided</scope>
             <optional>true</optional>
+            <version>1.0</version>
         </dependency>
         <dependency>
             <groupId>org.apache.geronimo.specs</groupId>
-            <artifactId>geronimo-annotation_1.2_spec</artifactId>
-            <version>1.0-alpha-1</version>
+            <artifactId>geronimo-interceptor_1.2_spec</artifactId>
+            <version>1.0</version>
             <scope>provided</scope>
             <optional>true</optional>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.geronimo.specs</groupId>
-          <artifactId>geronimo-interceptor_1.2_spec</artifactId>
-          <version>1.0-alpha-1</version>
-          <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.geronimo.specs</groupId>
             <artifactId>geronimo-atinject_1.0_spec</artifactId>
             <version>1.0</version>
             <scope>provided</scope>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.tomcat</groupId>
+            <artifactId>tomcat-el-api</artifactId>
+            <optional>true</optional>
         </dependency>
 
         <!-- Testing dependencies -->
@@ -296,10 +306,6 @@
                         <include>**/*TestCase.java</include>
                     </includes>
                 </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.commons</groupId>
-                <artifactId>commons-weaver-maven-plugin</artifactId>
             </plugin>
         </plugins>
     </build>
