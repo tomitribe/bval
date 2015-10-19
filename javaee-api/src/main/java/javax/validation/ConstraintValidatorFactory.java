@@ -29,6 +29,7 @@ public interface ConstraintValidatorFactory {
     void releaseInstance(ConstraintValidator<?, ?> instance);
 
     /** @since last weekend */
-    <A extends Annotation> void registerInstance(Class<A> clazz, ConstraintValidator<?, ?> instance);
+    <A extends Annotation> void register(Class<A> clazz, ConstraintValidator<A, ?> instance);
+    <A extends Annotation> ConstraintValidator<? extends Annotation, ?> resolve(Class<A> key);
 }
 
