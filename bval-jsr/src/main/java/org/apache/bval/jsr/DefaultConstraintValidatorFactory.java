@@ -27,6 +27,9 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 
@@ -85,9 +88,16 @@ public class DefaultConstraintValidatorFactory implements ConstraintValidatorFac
         // no-op
     }
 
-    @Override
-    public <A extends Annotation> void registerInstance(Class<A> clazz, ConstraintValidator<?, ?> instance) {
+    final Map<Class<? extends Annotation>, ConstraintValidator<? extends Annotation, ?>> constraints = new ConcurrentHashMap<>();
 
+    @Override
+    public <A extends Annotation> void register(Class<A> clazz, ConstraintValidator<A, ?> instance) {
+        constraints.put(clazz, instance);
+    }
+
+    @Override
+    public <A extends Annotation> ConstraintValidator<A, ?> resolve(Class<A> key) {
+        return (ConstraintValidator<A, ?>) constraints.get(key);
     }
 
     public void close() throws IOException {

@@ -280,7 +280,8 @@ public class ConstraintValidation<T extends Annotation> implements Validation, C
             return validator;
             // NOTE: validator initialization deferred until append phase
         }
-        return null;
+
+        return (ConstraintValidator<A, ? super T>) factory.resolve(annotation.annotationType());
     }
 
     private <A extends Annotation> void reduceTarget(final Map<Type, Collection<Class<? extends ConstraintValidator<A, ?>>>> validator, final AccessStrategy access) {

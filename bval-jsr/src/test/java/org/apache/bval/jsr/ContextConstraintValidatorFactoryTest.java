@@ -105,10 +105,15 @@ public class ContextConstraintValidatorFactoryTest extends TestCase {
             }
 
 			@Override
-			public <A extends Annotation> void registerInstance(Class<A> clazz, ConstraintValidator<?, ?> instance) {
+			public <A extends Annotation> void register(Class<A> clazz, ConstraintValidator<A, ?> instance) {
 
 			}
-		};
+
+            @Override
+            public <A extends Annotation> ConstraintValidator<? extends Annotation, ?> resolve(Class<A> key) {
+                return null;
+            }
+        };
 		final Set<ConstraintViolation<Example>> violations = factory.usingContext().constraintValidatorFactory(constraintValidatorFactory)
 				.getValidator().validate(new Example());
 		assertTrue(violations.isEmpty());
