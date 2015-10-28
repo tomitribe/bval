@@ -23,6 +23,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
+    <!--<parent>-->
+        <!--<groupId>org.tomitribe</groupId>-->
+        <!--<artifactId>oss-parent</artifactId>-->
+        <!--<version>3</version>-->
+        <!--<relativePath />-->
+    <!--</parent>-->
 
     <parent>
         <groupId>org.apache</groupId>
@@ -49,10 +55,23 @@
     <url>http://bval.apache.org/</url>
 
     <scm>
-        <connection>scm:svn:http://svn.apache.org/repos/asf/bval/trunk/</connection>
-        <developerConnection>scm:svn:https://svn.apache.org/repos/asf/bval/trunk/</developerConnection>
-        <url>http://svn.apache.org/repos/asf/bval/trunk/</url>
+        <connection>scm:git:git@github.com:tomitribe/bval.git</connection>
+        <url>scm:git:git@github.com:tomitribe/bval.git</url>
+        <developerConnection>scm:git:git@github.com:tomitribe/bval.git</developerConnection>
     </scm>
+
+    <distributionManagement>
+   		<snapshotRepository>
+   			<id>sonatype-nexus-snapshots</id>
+   			<name>Sonatype Nexus Snapshots</name>
+   			<url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+   		</snapshotRepository>
+   		<repository>
+   			<id>sonatype-nexus-staging</id>
+   			<name>Nexus Release Repository</name>
+   			<url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+   		</repository>
+   	</distributionManagement>
 
     <mailingLists>
         <mailingList>
@@ -236,13 +255,6 @@
         <name>Sebastian Bazley</name>
       </contributor>
     </contributors>
-
-    <distributionManagement>
-        <site>
-            <id>people.apache.org</id>
-            <url>${site.deploy.url}</url>
-        </site>
-    </distributionManagement>
 
     <reporting>
         <plugins>

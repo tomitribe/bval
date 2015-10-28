@@ -32,6 +32,19 @@
   <name>TomEE :: JavaEE Full API (zip and jar files)</name>
   <version>7.0-1-SNAPSHOT</version>
 
+  <distributionManagement>
+ 		<snapshotRepository>
+ 			<id>sonatype-nexus-snapshots</id>
+ 			<name>Sonatype Nexus Snapshots</name>
+ 			<url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+ 		</snapshotRepository>
+ 		<repository>
+ 			<id>sonatype-nexus-staging</id>
+ 			<name>Nexus Release Repository</name>
+ 			<url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+ 		</repository>
+ 	</distributionManagement>
+
   <build>
     <resources>
       <resource>

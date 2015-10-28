@@ -122,10 +122,10 @@ build.timestamp=${timestamp}
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
-            	<groupId>org.apache.commons</groupId>
-            	<artifactId>commons-weaver-maven-plugin</artifactId>
-            </plugin>
+            <!--<plugin>-->
+            	<!--<groupId>org.apache.commons</groupId>-->
+            	<!--<artifactId>commons-weaver-maven-plugin</artifactId>-->
+            <!--</plugin>-->
         </plugins>
         <pluginManagement>
         	<plugins>
